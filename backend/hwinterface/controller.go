@@ -135,7 +135,7 @@ func NewController() *piController {
 	//ledOk := gpio.NewLedDriver(r, "13")
 	//ledOk.Start()
 	//ledOk.On()
-	ledPower := gpio.NewLedDriver(r, "13")
+	ledPower := gpio.NewLedDriver(r, "11")
 	ledPower.Start()
 	ledPower.Brightness(0)
 	analogInput := i2c.NewADS1015Driver(r)
