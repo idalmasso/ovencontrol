@@ -1,0 +1,4 @@
+hardware:
+server:
+  distributionDirectory: ../../frontend/dist
+  port: 3333
