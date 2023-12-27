@@ -6,17 +6,17 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"gobot.io/x/gobot/drivers/gpio"
-	"gobot.io/x/gobot/drivers/i2c"
-	"gobot.io/x/gobot/platforms/raspi"
+	"github.com/idalmasso/ovencontrol/backend/hwinterface/drivers"
+	"gobot.io/x/gobot/v2/drivers/gpio"
+	"gobot.io/x/gobot/v2/platforms/raspi"
 )
 
 type piController struct {
-	processing        bool
-	buttonInput       *gpio.ButtonDriver
-	ledOk             *gpio.LedDriver
+	processing  bool
+	buttonInput *gpio.ButtonDriver
+	//ledOk             *gpio.LedDriver
 	ledPower          *gpio.LedDriver
-	analogInput       *i2c.ADS1x15Driver
+	analogInput       *drivers.ADS7830Driver
 	mutex             sync.RWMutex
 	buttonPressFunc   func()
 	actualProcessName string
@@ -30,24 +30,30 @@ func (c *piController) StartProcess() error {
 	if !c.canSetStartProcess() {
 		return ProcessingError{Operation: "Start Process"}
 	}
-	go func() {
-		defer c.setProcessing(false)
+	//go func() {
+	defer c.setProcessing(false)
 
-		t := time.Now()
-		var i byte
-		c.actualProcessName = fmt.Sprintf("%04d%02d%02d%02d%02d%02d", t.Year(), int(t.Month()), t.Day(), t.Hour(), t.Minute(), t.Second())
-		for {
-			val, err := c.analogInput.AnalogRead("0")
-			if err != nil {
-				glog.Errorln("ERR", err)
-			}
-			glog.Infoln("Value: ", val)
-			glog.Infoln("Setting let to Value: ", i)
-			c.ledPower.Brightness(i)
-			i = (i + 1) % byte(255)
-			time.Sleep(time.Second)
+	t := time.Now()
+	c.actualProcessName = fmt.Sprintf("%04d%02d%02d%02d%02d%02d", t.Year(), int(t.Month()), t.Day(), t.Hour(), t.Minute(), t.Second())
+
+	for temp := 0; temp < 1280; temp += 50 {
+		value, err := c.analogInput.AnalogRead("0")
+		if err != nil {
+			glog.Errorln("ERR", err)
 		}
-	}()
+		ovenTemperature := float64(value) / 255 * 1350
+		rampTemperature := float64(temp)
+		glog.Infoln("Forno temperatura: ", ovenTemperature)
+		glog.Infoln("Rampa temperatura: ", rampTemperature)
+		if rampTemperature > ovenTemperature {
+			c.ledPower.Brightness(byte(255))
+		} else {
+			c.ledPower.Brightness(byte(0))
+		}
+
+		time.Sleep(time.Second)
+	}
+	//}()
 
 	return nil
 }
@@ -61,7 +67,7 @@ func (c *piController) StopProcess() error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	if c.processing {
-		c.ledOk.On()
+		//c.ledOk.On()
 		c.processing = false
 		c.actualProcessName = ""
 	}
@@ -88,7 +94,7 @@ func (c *piController) canSetStartProcess() bool {
 	if c.processing {
 		return false
 	} else {
-		c.ledOk.Off()
+		//c.ledOk.Off()
 		c.processing = true
 
 		if glog.V(4) {
@@ -114,9 +120,9 @@ func (c *piController) setProcessing(value bool) {
 	}
 	c.processing = value
 	if c.processing {
-		c.ledOk.Off()
+		//c.ledOk.Off()
 	} else {
-		c.ledOk.On()
+		//c.ledOk.On()
 	}
 }
 
@@ -137,9 +143,19 @@ func NewController() *piController {
 	//ledOk.On()
 	ledPower := gpio.NewLedDriver(r, "11")
 	ledPower.Start()
-	ledPower.Brightness(0)
-	analogInput := i2c.NewADS1015Driver(r)
-	analogInput.WithAddress(0x42)
+
+	err := ledPower.Brightness(0)
+	if err != nil {
+		glog.Errorln(err)
+	}
+
+	address := 0x4b
+	analogInput := drivers.NewADS7830Driver(r)
+
+	analogInput.SetAddress(address)
+	analogInput.SetBus(r.DefaultI2cBus())
+	analogInput.Start()
+
 	pi := piController{buttonInput: buttonInput, analogInput: analogInput, ledPower: ledPower}
 	buttonInput.On(gpio.ButtonRelease, pi.buttonPressed)
 	return &pi
