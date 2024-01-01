@@ -10,7 +10,8 @@ import (
 	"flag"
 
 	"github.com/golang/glog"
-	"github.com/idalmasso/ovencontrol/backend/hwinterface"
+	"github.com/idalmasso/ovencontrol/backend/dummyinterface"
+	"github.com/idalmasso/ovencontrol/backend/server"
 )
 
 func init() {
@@ -27,14 +28,13 @@ func main() {
 	if glog.V(3) {
 		glog.Infoln("backend start process")
 	}
-	controller := hwinterface.NewController()
-	//controller := hwdummy.NewController()
+	//controller := hwinterface.NewController()
+	controller := dummyinterface.DummyController{}
 
-	//server := server.MachineServer{}
-	//server.Init(controller)
-	//server.ListenAndServe()
-	glog.Infoln(controller.GetActualProcessName())
-	controller.StartProcess()
+	server := server.MachineServer{}
+	server.Init(controller)
+	server.ListenAndServe()
+
 }
 
 func isFlagPassed(name string) bool {

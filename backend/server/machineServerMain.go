@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log/slog"
 	"net/http"
 	"os"
 	"strconv"
@@ -8,12 +9,13 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/golang/glog"
+	"github.com/go-chi/cors"
+	"github.com/go-chi/httplog/v2"
 	"github.com/idalmasso/ovencontrol/backend/config"
 )
 
 type controllerMachine interface {
-	SetOnButtonPress(func())
+	temperatureReader
 }
 
 // PiServer
@@ -26,15 +28,11 @@ type MachineServer struct {
 
 // ListenAndServe is the main server procedure that only wraps http.ListenAndServe
 func (s *MachineServer) ListenAndServe() {
-	if glog.V(3) {
-		glog.Infoln("MachineServer -  MachineServer.ListenAndServe start")
-	}
+
 	if !s.initialized {
 		panic("Server not initialized")
 	}
-	if glog.V(3) {
-		glog.Infoln("MachineServer -  MachineServer.starting on port", s.configuration.Server.Port)
-	}
+
 	if err := http.ListenAndServe(":"+strconv.Itoa(s.configuration.Server.Port), s.Router); err != nil {
 		panic("Cannot listen on server: " + err.Error())
 	}
@@ -42,9 +40,23 @@ func (s *MachineServer) ListenAndServe() {
 
 // Init initialize the server router and set the controllerMachine needed to do the work
 func (s *MachineServer) Init(machine controllerMachine) {
-	if glog.V(3) {
-		glog.Infoln("MachineServer -  MachineServer.Init start")
-	}
+	// Logger
+	logger := httplog.NewLogger("oven-logger", httplog.Options{
+		// JSON:             true,
+		LogLevel:         slog.LevelDebug,
+		Concise:          true,
+		RequestHeaders:   true,
+		MessageFieldName: "message",
+		// TimeFieldFormat: time.RFC850,
+		Tags: map[string]string{
+			"env": "dev",
+		},
+		QuietDownRoutes: []string{
+			"/ping",
+		},
+		QuietDownPeriod: 10 * time.Second,
+		// SourceFieldName: "source",
+	})
 	s.configuration = &config.Config{}
 	if err := s.configuration.ReadFromFile("configuration.yaml"); err != nil {
 		panic("cannot read configuration file")
@@ -52,6 +64,18 @@ func (s *MachineServer) Init(machine controllerMachine) {
 	s.machine = machine
 	s.updateMachineFromConfig()
 	s.Router = chi.NewRouter()
+	s.Router.Use(cors.Handler(cors.Options{
+		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
+		AllowedOrigins: []string{"https://*", "http://*"},
+		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	}))
+	s.Router.Use(httplog.RequestLogger(logger))
+	s.Router.Use(middleware.Heartbeat("/ping"))
 	s.Router.Use(middleware.RequestID)
 	s.Router.Use(middleware.RealIP)
 	s.Router.Use(middleware.Logger)
@@ -61,6 +85,10 @@ func (s *MachineServer) Init(machine controllerMachine) {
 	FileServer(s.Router.(*chi.Mux), s.configuration.Server.DistributionDirectory)
 	s.Router.Route("/api", func(router chi.Router) {
 		router.Route("/processes", func(processRouter chi.Router) {
+			processRouter.Route("/get-temperature", func(r chi.Router) {
+				r.Get("/", s.getTemperature)
+
+			})
 		})
 		router.Route("/configuration", func(configRouter chi.Router) {
 			//configRouter.Get("/", s.getConfig)
@@ -73,9 +101,6 @@ func (s *MachineServer) Init(machine controllerMachine) {
 
 func (s *MachineServer) updateMachineFromConfig() {
 
-	s.machine.SetOnButtonPress(func() {
-
-	})
 }
 
 // FileServer conveniently sets up a http.FileServer handler to serve
