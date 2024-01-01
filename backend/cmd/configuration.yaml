@@ -1,4 +1,5 @@
 hardware:
 server:
   distributionDirectory: ../../frontend/dist
+  ovenProgramFolder: ./programs
   port: 3333

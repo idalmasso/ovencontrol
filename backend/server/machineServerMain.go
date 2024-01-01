@@ -20,10 +20,11 @@ type controllerMachine interface {
 
 // PiServer
 type MachineServer struct {
-	configuration *config.Config
-	initialized   bool
-	Router        chi.Router
-	machine       controllerMachine
+	ovenProgramManager ovenProgramManager
+	configuration      *config.Config
+	initialized        bool
+	Router             chi.Router
+	machine            controllerMachine
 }
 
 // ListenAndServe is the main server procedure that only wraps http.ListenAndServe
@@ -61,6 +62,12 @@ func (s *MachineServer) Init(machine controllerMachine) {
 	if err := s.configuration.ReadFromFile("configuration.yaml"); err != nil {
 		panic("cannot read configuration file")
 	}
+	var err error
+	s.ovenProgramManager, err = NewOvenProgramManager(s.configuration.Server.OvenProgramFolder)
+	if err != nil {
+		slog.Error("Error", err)
+		panic("Something wrong")
+	}
 	s.machine = machine
 	s.updateMachineFromConfig()
 	s.Router = chi.NewRouter()
@@ -91,6 +98,10 @@ func (s *MachineServer) Init(machine controllerMachine) {
 			})
 		})
 		router.Route("/configuration", func(configRouter chi.Router) {
+			configRouter.Route("/programs", func(r chi.Router) {
+				r.Get("/", s.getPrograms)
+				r.Post("/", s.addUpdateProgram)
+			})
 			//configRouter.Get("/", s.getConfig)
 			//configRouter.Put("/", s.updateConfig)
 		})

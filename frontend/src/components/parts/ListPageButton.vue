@@ -1,12 +1,14 @@
 <template>
   <div class="align-center text-center list-page-button">
     <v-btn
+      color="blue"
       height="300"
       width="300"
-      :class="['d-flex bg-secondary justify-center']"
+      :class="['d-flex justify-center']"
     >
+      <v-icon size="250">{{ button.icon }}</v-icon>
     </v-btn>
-    <div upper>{{ title }}</div>
+    <div upper>{{ button.title }}</div>
   </div>
 </template>
 <style>
@@ -15,5 +17,5 @@
 }
 </style>
 <script setup>
-defineProps(["title"]);
+defineProps(["button"]);
 </script>

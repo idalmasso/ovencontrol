@@ -8,13 +8,12 @@ import (
 
 type Config struct {
 	Hardware struct {
-		MotorDegreePerStep float64 `yaml:"motorDegreePerStep" json:"motorDegreePerStep,string"`
-		WaitForStep        int     `yaml:"waitForStep" json:"waitForStep,string"`
-		GearRatio          float64 `yaml:"gearRatio" json:"gearRatio,string"`
+		GearRatio float64 `yaml:"gearRatio" json:"gearRatio,string"`
 	} `yaml:"hardware" json:"hardware"`
 	Server struct {
 		DistributionDirectory string `yaml:"distributionDirectory" json:"distributionDirectory"`
 		Port                  int    `yaml:"port" json:"port,string"`
+		OvenProgramFolder     string `yaml:"ovenProgramFolder" json:"ovenProgramFolder"`
 	} `yaml:"server" json:"server"`
 }
 

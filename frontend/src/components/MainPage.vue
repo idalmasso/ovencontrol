@@ -1,21 +1,24 @@
 <template>
-  <v-container>
-    <v-row justify="center" class="fill-height" align-content="center">
-      <v-col>
-        <ListPageButton
-          title="Cottura"
-          @click="console.log('NOT IMPLEMENTED')"
-        ></ListPageButton> </v-col
-      ><v-col>
-        <ListPageButton
-          title="Test"
-          @click="$router.push({ name: 'Tests' })"
-        ></ListPageButton> </v-col
-      ><v-col> <ListPageButton title="Configurazione"></ListPageButton> </v-col>
-    </v-row>
-  </v-container>
+  <ListPageWithButtons :listItems="listItems"></ListPageWithButtons>
 </template>
 
 <script setup>
-import ListPageButton from "./ListPageButton.vue";
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import ListPageWithButtons from "./parts/ListPageWithButtons.vue";
+const router = useRouter();
+const listItems = ref([
+  {
+    button: { title: "Cottura", icon: "mdi-fire-circle" },
+    action: () => console.log("NOT IMPLEMENTED"),
+  },
+  {
+    button: { title: "Tests", icon: "mdi-chart-timeline-variant-shimmer" },
+    action: () => router.push({ name: "ListTests" }),
+  },
+  {
+    button: { title: "Configurazione", icon: "mdi-cog" },
+    action: () => router.push({ name: "ListConfigurations" }),
+  },
+]);
 </script>

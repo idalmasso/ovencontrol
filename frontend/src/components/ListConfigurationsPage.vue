@@ -9,11 +9,11 @@ import ListPageWithButtons from "./parts/ListPageWithButtons.vue";
 const router = useRouter();
 const listItems = ref([
   {
-    button: { title: "Test temperatura", icon: "mdi-thermometer-check" },
-    action: () => router.push({ name: "TemperatureCheck" }),
+    button: { title: "Configura programmi", icon: "mdi-tune-vertical-variant" },
+    action: () => router.push({ name: "ListProgramConfigurations" }),
   },
   {
-    button: { title: "Test rampa", icon: "mdi-finance" },
+    button: { title: "Configurazione parametri", icon: "mdi-wrench-cog" },
     action: () => console.log("NOT IMPLEMENTED"),
   },
 ]);

@@ -5,11 +5,20 @@
         >Indietro</v-btn
       ></v-row
     >
-    <v-container class="fill-height">
-      <v-responsive class="align-center text-center fill-height">
-        Read: {{ temp }}
-      </v-responsive>
-    </v-container>
+    <v-row text-center align-content="center" justify="center">
+      <v-card class="mx-auto" width="400" title="Temperatura forno">
+        <v-card-text class="py-0">
+          <v-row align="center" no-gutters>
+            <v-col cols="2">
+              <span class="text-h3 font-weight-bold">{{ temp }}</span>
+            </v-col>
+            <v-col>
+              <span class="text-h3 font-weight-bold">&deg;C </span>
+            </v-col>
+          </v-row>
+        </v-card-text>
+      </v-card>
+    </v-row>
   </v-container>
 </template>
 
