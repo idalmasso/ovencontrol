@@ -10,15 +10,15 @@ import (
 type OvenProgram struct {
 	Name              string
 	Points            []StepPoint
-	AirCloseAtDegrees float32
+	AirCloseAtDegrees float64
 }
 
 type StepPoint struct {
-	Temperature float32
-	TimeMinutes float32
+	Temperature float64
+	TimeMinutes float64
 }
 
-func (s StepPoint) TimeSeconds() float32 {
+func (s StepPoint) TimeSeconds() float64 {
 	return s.TimeMinutes * 60
 }
 

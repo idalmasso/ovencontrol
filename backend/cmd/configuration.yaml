@@ -3,3 +3,14 @@ server:
   distributionDirectory: ../../frontend/dist
   ovenProgramFolder: ./programs
   port: 3333
+  testRampTimeMinutes: 200
+  testRampTemperature: 1000
+oven:
+  length: 0.11
+  height: 0.08
+  width: 0.23
+  insulationWidths: [0.075, 0.05]
+  thermalConductivities: [0.3, 0.14]
+  thermalCapacity: 900
+  weight: 24
+  maxPower: 1000

@@ -77,6 +77,21 @@ const routes = [
       },
     ],
   },
+  {
+    path: "/tests/test-ramp",
+    component: () => import("@/layouts/default/DefaultLayout.vue"),
+    children: [
+      {
+        path: "",
+        name: "TestRamp",
+        // route level code-splitting
+        // this generates a separate chunk (Home-[hash].js) for this route
+        // which is lazy-loaded when the route is visited.
+        component: () => import("@/views/TestRampView.vue"),
+        meta: { title: "TEST RAMPA DI SALITA" },
+      },
+    ],
+  },
 ];
 
 const router = createRouter({

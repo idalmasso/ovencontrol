@@ -14,7 +14,7 @@ const listItems = ref([
   },
   {
     button: { title: "Test rampa", icon: "mdi-finance" },
-    action: () => console.log("NOT IMPLEMENTED"),
+    action: () => router.push({ name: "TestRamp" }),
   },
 ]);
 </script>

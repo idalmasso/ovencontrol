@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"os"
@@ -16,6 +17,9 @@ import (
 
 type controllerMachine interface {
 	temperatureReader
+	machineRampTester
+	InitConfig(c config.Config)
+	IsWorking() bool
 }
 
 // PiServer
@@ -69,6 +73,7 @@ func (s *MachineServer) Init(machine controllerMachine) {
 		panic("Something wrong")
 	}
 	s.machine = machine
+
 	s.updateMachineFromConfig()
 	s.Router = chi.NewRouter()
 	s.Router.Use(cors.Handler(cors.Options{
@@ -96,6 +101,15 @@ func (s *MachineServer) Init(machine controllerMachine) {
 				r.Get("/", s.getTemperature)
 
 			})
+			processRouter.Route("/get-temperatures-process", func(r chi.Router) {
+				r.Get("/", s.getTemperaturesProcess)
+			})
+			processRouter.Route("/is-working", func(r chi.Router) {
+				r.Get("/", s.isWorking)
+			})
+			processRouter.Route("/test-ramp", func(r chi.Router) {
+				r.Post("/", s.testRamp)
+			})
 		})
 		router.Route("/configuration", func(configRouter chi.Router) {
 			configRouter.Route("/programs", func(r chi.Router) {
@@ -111,7 +125,11 @@ func (s *MachineServer) Init(machine controllerMachine) {
 }
 
 func (s *MachineServer) updateMachineFromConfig() {
-
+	s.machine.InitConfig(*s.configuration)
+}
+func (s *MachineServer) isWorking(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(struct{ IsWorking bool }{IsWorking: s.machine.IsWorking()})
 }
 
 // FileServer conveniently sets up a http.FileServer handler to serve

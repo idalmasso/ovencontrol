@@ -32,7 +32,7 @@ func main() {
 	controller := dummyinterface.DummyController{}
 
 	server := server.MachineServer{}
-	server.Init(controller)
+	server.Init(&controller)
 	server.ListenAndServe()
 
 }
