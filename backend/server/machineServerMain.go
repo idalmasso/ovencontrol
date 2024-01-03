@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"log/slog"
 	"net/http"
 	"os"
@@ -17,7 +16,7 @@ import (
 
 type controllerMachine interface {
 	temperatureReader
-	machineRampTester
+	Oven
 	InitConfig(c config.Config)
 	IsWorking() bool
 }
@@ -29,6 +28,7 @@ type MachineServer struct {
 	initialized        bool
 	Router             chi.Router
 	machine            controllerMachine
+	ovenProgramWorker  *OvenProgramWorker
 }
 
 // ListenAndServe is the main server procedure that only wraps http.ListenAndServe
@@ -68,6 +68,7 @@ func (s *MachineServer) Init(machine controllerMachine) {
 	}
 	var err error
 	s.ovenProgramManager, err = NewOvenProgramManager(s.configuration.Server.OvenProgramFolder)
+
 	if err != nil {
 		slog.Error("Error", err)
 		panic("Something wrong")
@@ -75,6 +76,7 @@ func (s *MachineServer) Init(machine controllerMachine) {
 	s.machine = machine
 
 	s.updateMachineFromConfig()
+	s.ovenProgramWorker = NewOvenProgramWorker(s.machine, *s.configuration)
 	s.Router = chi.NewRouter()
 	s.Router.Use(cors.Handler(cors.Options{
 		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
@@ -126,10 +128,6 @@ func (s *MachineServer) Init(machine controllerMachine) {
 
 func (s *MachineServer) updateMachineFromConfig() {
 	s.machine.InitConfig(*s.configuration)
-}
-func (s *MachineServer) isWorking(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(struct{ IsWorking bool }{IsWorking: s.machine.IsWorking()})
 }
 
 // FileServer conveniently sets up a http.FileServer handler to serve

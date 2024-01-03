@@ -17,5 +17,5 @@ func (s *MachineServer) getTemperature(w http.ResponseWriter, r *http.Request) {
 
 func (s *MachineServer) getTemperaturesProcess(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(struct{ Temperature, ExpectedTemperature float64 }{Temperature: s.machine.GetTemperature(), ExpectedTemperature: s.machine.GetTemperatureExpected()})
+	json.NewEncoder(w).Encode(struct{ Temperature, ExpectedTemperature float64 }{Temperature: s.machine.GetTemperature(), ExpectedTemperature: s.ovenProgramWorker.actualDesiredProgramTemperature})
 }
