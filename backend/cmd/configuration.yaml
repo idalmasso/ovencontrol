@@ -14,3 +14,13 @@ oven:
   thermalCapacity: 900
   weight: 24
   maxPower: 1000
+controller:
+  kpRamp: 0.9
+  kiRamp: 0.001
+  kdRamp: 0.001
+  kpMaintain: 0.01
+  kiMaintain: 0.0001
+  kdMaintain: 0.0001
+  stepTime: 1
+  saveTime: 60
+  savedRunFolder: ./runs

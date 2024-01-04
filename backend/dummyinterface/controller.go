@@ -2,7 +2,6 @@ package dummyinterface
 
 import (
 	"math"
-	"sync"
 	"time"
 
 	"github.com/idalmasso/ovencontrol/backend/config"
@@ -11,20 +10,13 @@ import (
 type DummyController struct {
 	ovenTemperature, externalTemperature                                                  float64
 	insulationWidth, thermalConductivity, internalArea, thermalCapacity, weight, maxPower float64
-	timeSeconds                                                                           float64
 	actualPercentual                                                                      float64
-	actualDesiredProgramTemperature                                                       float64
 	timeMultiplier                                                                        float64
 	isWorking                                                                             bool
-	mu                                                                                    *sync.Mutex
 }
 
 func (d DummyController) GetTemperature() float64 {
 	return math.Round(d.ovenTemperature*100) / 100
-}
-
-func (d DummyController) GetTemperatureExpected() float64 {
-	return math.Round(d.actualDesiredProgramTemperature*100) / 100
 }
 
 func (d *DummyController) IsWorking() bool {
@@ -53,7 +45,6 @@ func (d *DummyController) InitConfig(c config.Config) {
 	for _, v := range c.Oven.InsultationWidths {
 		d.insulationWidth += v
 	}
-	d.mu = &sync.Mutex{}
 	d.internalArea = c.Oven.Height * c.Oven.Length * c.Oven.Width
 	d.maxPower = c.Oven.MaxPower
 	d.ovenTemperature = 25

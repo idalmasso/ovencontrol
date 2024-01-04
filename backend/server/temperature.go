@@ -7,7 +7,6 @@ import (
 
 type temperatureReader interface {
 	GetTemperature() float64
-	GetTemperatureExpected() float64
 }
 
 func (s *MachineServer) getTemperature(w http.ResponseWriter, r *http.Request) {
@@ -17,5 +16,5 @@ func (s *MachineServer) getTemperature(w http.ResponseWriter, r *http.Request) {
 
 func (s *MachineServer) getTemperaturesProcess(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(struct{ Temperature, ExpectedTemperature float64 }{Temperature: s.machine.GetTemperature(), ExpectedTemperature: s.ovenProgramWorker.actualDesiredProgramTemperature})
+	json.NewEncoder(w).Encode(struct{ Temperature, ExpectedTemperature float64 }{Temperature: s.machine.GetTemperature(), ExpectedTemperature: s.ovenProgramWorker.GetTargetTemperature()})
 }

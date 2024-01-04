@@ -62,6 +62,7 @@ const getTemp = () => {
     (a) => {
       if (a.ok) {
         a.json().then((t) => {
+          
           temp.value = t.Temperature;
           tempExpected.value = t.ExpectedTemperature;
           temperatureData.push({
@@ -110,6 +111,16 @@ function TryStartTest() {
       method: "POST",
     }).then((a) => {
       if (a.ok) {
+        console.log("1")
+        temperatureData.length=0;
+        console.log("2")
+        temperatureExpected.length=0;
+        console.log("3")
+        if (chart.value !== null) {
+          chart.value.chart.update();
+
+        }
+        console.log("4")
         timer = setInterval(getTemp, 10000);
       }
     });

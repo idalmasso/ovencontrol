@@ -12,23 +12,24 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/go-chi/httplog/v2"
 	"github.com/idalmasso/ovencontrol/backend/config"
+	"github.com/idalmasso/ovencontrol/backend/ovenprograms"
 )
 
 type controllerMachine interface {
 	temperatureReader
-	Oven
+	ovenprograms.Oven
 	InitConfig(c config.Config)
 	IsWorking() bool
 }
 
 // PiServer
 type MachineServer struct {
-	ovenProgramManager ovenProgramManager
+	ovenProgramManager ovenprograms.OvenProgramManager
 	configuration      *config.Config
 	initialized        bool
 	Router             chi.Router
 	machine            controllerMachine
-	ovenProgramWorker  *OvenProgramWorker
+	ovenProgramWorker  *ovenprograms.OvenProgramWorker
 }
 
 // ListenAndServe is the main server procedure that only wraps http.ListenAndServe
@@ -67,7 +68,7 @@ func (s *MachineServer) Init(machine controllerMachine) {
 		panic("cannot read configuration file")
 	}
 	var err error
-	s.ovenProgramManager, err = NewOvenProgramManager(s.configuration.Server.OvenProgramFolder)
+	s.ovenProgramManager, err = ovenprograms.NewOvenProgramManager(s.configuration.Server.OvenProgramFolder)
 
 	if err != nil {
 		slog.Error("Error", err)
@@ -76,7 +77,7 @@ func (s *MachineServer) Init(machine controllerMachine) {
 	s.machine = machine
 
 	s.updateMachineFromConfig()
-	s.ovenProgramWorker = NewOvenProgramWorker(s.machine, *s.configuration)
+	s.ovenProgramWorker = ovenprograms.NewOvenProgramWorker(s.machine, *s.configuration)
 	s.Router = chi.NewRouter()
 	s.Router.Use(cors.Handler(cors.Options{
 		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts

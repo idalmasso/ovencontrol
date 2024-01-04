@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/idalmasso/ovencontrol/backend/config"
+	"github.com/idalmasso/ovencontrol/backend/ovenprograms"
 )
 
 func (s *MachineServer) testRamp(w http.ResponseWriter, r *http.Request) {
@@ -18,12 +18,12 @@ func (s *MachineServer) testRamp(w http.ResponseWriter, r *http.Request) {
 
 func (s *MachineServer) TryStartTestRamp(temperature, timeMinutes float64) bool {
 
-	stepPoint := config.StepPoint{Temperature: temperature, TimeMinutes: timeMinutes}
-	program := config.OvenProgram{Name: "TestProgram", Points: []config.StepPoint{stepPoint}}
-	s.ovenProgramWorker.followOvenProgram(program)
+	stepPoint := ovenprograms.StepPoint{Temperature: temperature, TimeMinutes: timeMinutes}
+	program := ovenprograms.OvenProgram{Name: "TestProgram", Points: []ovenprograms.StepPoint{stepPoint}}
+	s.ovenProgramWorker.StartOvenProgram(program)
 	return true
 }
 func (s *MachineServer) isWorking(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(struct{ IsWorking bool }{IsWorking: s.ovenProgramWorker.isWorking})
+	json.NewEncoder(w).Encode(struct{ IsWorking bool }{IsWorking: s.ovenProgramWorker.IsWorking()})
 }
