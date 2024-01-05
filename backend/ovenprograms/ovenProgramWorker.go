@@ -101,21 +101,26 @@ func (d *OvenProgramWorker) doRampUp(s StepPoint) {
 	desiredVariance := (s.Temperature - d.oven.GetTemperature()) / s.TimeSeconds()
 	ovenTemperature := d.oven.GetTemperature()
 	timeSave := 0.0
+	lastNow := time.Now()
+	step := 0.0
 	for ovenTemperature < s.Temperature {
-		d.timeSeconds += d.stepTime
-		timeSave += d.stepTime
+		step = time.Since(lastNow).Seconds()
+		d.timeSeconds += step
+		timeSave += step
 		newTemperature := d.oven.GetTemperature()
 		temperatureVariance = newTemperature - ovenTemperature
 		ovenTemperature = newTemperature
-		expectedVariance := desiredVariance * d.stepTime
+		expectedVariance := desiredVariance * step
 		d.TargetTemperature += expectedVariance
 		if d.TargetTemperature > s.Temperature {
 			d.TargetTemperature = s.Temperature
 		}
 		errorValue := expectedVariance - temperatureVariance
 
-		integral = integral + errorValue*d.stepTime
-		derivative = (errorValue - previousError) / d.stepTime
+		integral = integral + errorValue*step
+		if step != 0 {
+			derivative = (errorValue - previousError) / step
+		}
 		actualPercentual := d.oven.GetPercentual()
 		actualPercentual += d.kpRamp*errorValue + d.kiRamp*integral + d.kdRamp*derivative
 		actualPercentual = min(actualPercentual, 1)
@@ -128,6 +133,7 @@ func (d *OvenProgramWorker) doRampUp(s StepPoint) {
 			d.Save()
 			d.lastPointsToBeWritten = 0
 		}
+		lastNow = time.Now()
 		time.Sleep(time.Duration(d.stepTime) * time.Second)
 	}
 }
@@ -138,16 +144,21 @@ func (d *OvenProgramWorker) maintainTemperature(s StepPoint) {
 	timeSave := 0.0
 	first := true
 	ovenTemperature := d.oven.GetTemperature()
+	lastNow := time.Now()
+	step := 0.0
 	for ovenTemperature < s.Temperature {
-		d.timeSeconds += d.stepTime
-		timeSave += d.stepTime
+		step = time.Since(lastNow).Seconds()
+		d.timeSeconds += step
+		timeSave += step
 		errorValue := s.Temperature - ovenTemperature
 		if first {
 			first = false
 			previousError = errorValue
 		}
-		integral = integral + errorValue*d.stepTime
-		derivative = (errorValue - previousError) / d.stepTime
+		integral = integral + errorValue*step
+		if step != 0 {
+			derivative = (errorValue - previousError) / step
+		}
 		actualPercentual := d.kpMaintain*errorValue + d.kiMaintain*integral + d.kdMaintain*derivative
 		actualPercentual = min(actualPercentual, 1)
 		actualPercentual = max(actualPercentual, 0)
@@ -159,6 +170,7 @@ func (d *OvenProgramWorker) maintainTemperature(s StepPoint) {
 			d.Save()
 			d.lastPointsToBeWritten = 0
 		}
+		lastNow = time.Now()
 		time.Sleep(time.Duration(d.stepTime) * time.Second)
 		ovenTemperature = d.oven.GetTemperature()
 	}
@@ -169,21 +181,26 @@ func (d *OvenProgramWorker) doRampDown(s StepPoint) {
 	desiredVariance := (s.Temperature - d.oven.GetTemperature()) / s.TimeSeconds()
 	ovenTemperature := d.oven.GetTemperature()
 	timeSave := 0.0
+	lastNow := time.Now()
+	step := 0.0
 	for d.oven.GetTemperature() > s.Temperature {
-		d.timeSeconds += d.stepTime
-		timeSave += d.stepTime
+		step = time.Since(lastNow).Seconds()
+		d.timeSeconds += step
+		timeSave += step
 		newTemperature := d.oven.GetTemperature()
 		temperatureVariance = newTemperature - ovenTemperature
 		ovenTemperature = newTemperature
-		expectedVariance := desiredVariance * d.stepTime
+		expectedVariance := desiredVariance * step
 		d.TargetTemperature += expectedVariance
 		if d.TargetTemperature > s.Temperature {
 			d.TargetTemperature = s.Temperature
 		}
 		errorValue := expectedVariance - temperatureVariance
 
-		integral = integral + errorValue*d.stepTime
-		derivative = (errorValue - previousError) / d.stepTime
+		integral = integral + errorValue*step
+		if step != 0 {
+			derivative = (errorValue - previousError) / step
+		}
 		actualPercentual := d.oven.GetPercentual()
 		actualPercentual += d.kpRamp*errorValue + d.kiRamp*integral + d.kdRamp*derivative
 		actualPercentual = min(actualPercentual, 1)
@@ -196,6 +213,7 @@ func (d *OvenProgramWorker) doRampDown(s StepPoint) {
 			d.Save()
 			d.lastPointsToBeWritten = 0
 		}
+		lastNow = time.Now()
 		time.Sleep(time.Duration(d.stepTime) * time.Second)
 	}
 }
