@@ -53,7 +53,7 @@ func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram) {
 	d.isWorking = true
 	d.mu.Unlock()
 	d.programName = program.Name
-	d.runName = program.Name + time.Now().Format("2006-01-02T15:04:05")
+	d.runName = time.Now().Format("2006-01-02T15-04-05") + "-" + program.Name
 	d.programHistory = make([]ProgramDataPoint, 0)
 	d.lastPointsToBeWritten = 0
 	go func(program OvenProgram) {
