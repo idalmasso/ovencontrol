@@ -42,10 +42,10 @@ const getTemp = () => {
   fetch("http://localhost:3333/api/processes/get-temperature").then((a) => {
     if (a.ok) {
       a.json().then((t) => {
-        temp.value = t.Temperature;
+        temp.value = t["oven-temperature"];
         temperatureData.push({
           x: i,
-          y: t.Temperature,
+          y: t["oven-temperature"],
         });
         if (chart.value !== null) {
           chart.value.chart.update();

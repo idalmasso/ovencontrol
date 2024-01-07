@@ -3,7 +3,7 @@ server:
   distributionDirectory: ../../frontend/dist
   ovenProgramFolder: ./programs
   port: 3333
-  testRampTimeMinutes: 200
+  testRampTimeMinutes: 1
   testRampTemperature: 1000
 oven:
   length: 0.11
@@ -13,7 +13,7 @@ oven:
   thermalConductivities: [0.3, 0.14]
   thermalCapacity: 900
   weight: 24
-  maxPower: 1000
+  maxPower: 10000
 controller:
   kpRamp: 0.9
   kiRamp: 0.001

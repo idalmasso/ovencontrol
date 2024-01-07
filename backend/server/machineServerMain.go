@@ -102,7 +102,6 @@ func (s *MachineServer) Init(machine controllerMachine) {
 		router.Route("/processes", func(processRouter chi.Router) {
 			processRouter.Route("/get-temperature", func(r chi.Router) {
 				r.Get("/", s.getTemperature)
-
 			})
 			processRouter.Route("/get-temperatures-process", func(r chi.Router) {
 				r.Get("/", s.getTemperaturesProcess)
@@ -112,6 +111,9 @@ func (s *MachineServer) Init(machine controllerMachine) {
 			})
 			processRouter.Route("/test-ramp", func(r chi.Router) {
 				r.Post("/", s.testRamp)
+			})
+			processRouter.Route("/get-actual-process-data", func(r chi.Router) {
+				r.Get("/", s.getAllDataActualWork)
 			})
 		})
 		router.Route("/configuration", func(configRouter chi.Router) {

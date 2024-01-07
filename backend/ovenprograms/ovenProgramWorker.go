@@ -36,6 +36,10 @@ type OvenProgramWorker struct {
 	lastPointsToBeWritten              int
 }
 
+func (d OvenProgramWorker) GetTimeSeconds() float64 {
+	return d.timeSeconds
+}
+
 func (d OvenProgramWorker) GetTargetTemperature() float64 {
 	return math.Round(d.TargetTemperature*100) / 100
 }
@@ -105,6 +109,7 @@ func (d *OvenProgramWorker) doRampUp(s StepPoint) {
 	step := 0.0
 	for ovenTemperature < s.Temperature {
 		step = time.Since(lastNow).Seconds()
+		lastNow = time.Now()
 		d.timeSeconds += step
 		timeSave += step
 		newTemperature := d.oven.GetTemperature()
@@ -132,8 +137,9 @@ func (d *OvenProgramWorker) doRampUp(s StepPoint) {
 		if timeSave > d.stepSave {
 			d.Save()
 			d.lastPointsToBeWritten = 0
+			timeSave = 0
 		}
-		lastNow = time.Now()
+
 		time.Sleep(time.Duration(d.stepTime) * time.Second)
 	}
 }
@@ -169,6 +175,7 @@ func (d *OvenProgramWorker) maintainTemperature(s StepPoint) {
 		if timeSave > d.stepSave {
 			d.Save()
 			d.lastPointsToBeWritten = 0
+			timeSave = 0
 		}
 		lastNow = time.Now()
 		time.Sleep(time.Duration(d.stepTime) * time.Second)
@@ -212,6 +219,7 @@ func (d *OvenProgramWorker) doRampDown(s StepPoint) {
 		if timeSave > d.stepSave {
 			d.Save()
 			d.lastPointsToBeWritten = 0
+			timeSave = 0
 		}
 		lastNow = time.Now()
 		time.Sleep(time.Duration(d.stepTime) * time.Second)
@@ -263,8 +271,18 @@ func NewOvenProgramWorker(oven Oven, config config.Config) *OvenProgramWorker {
 	return &o
 }
 
-func (d *OvenProgramWorker) GetAllDataActualWork() ProgramDataPointArray {
-	return d.programHistory
+func (d *OvenProgramWorker) GetAllDataActualWork(step int) ProgramDataPointArray {
+	if step == 1 {
+		return d.programHistory
+	} else {
+		programHistoryLn := len(d.programHistory)
+		res := make([]ProgramDataPoint, programHistoryLn/10+1)
+
+		for i := 0; i < programHistoryLn; i += step {
+			res[i/step] = d.programHistory[i]
+		}
+		return res
+	}
 }
 
 func (d *OvenProgramWorker) GetEndedRunList() ([]string, error) {

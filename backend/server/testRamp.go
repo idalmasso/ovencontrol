@@ -23,7 +23,3 @@ func (s *MachineServer) TryStartTestRamp(temperature, timeMinutes float64) bool 
 	s.ovenProgramWorker.StartOvenProgram(program)
 	return true
 }
-func (s *MachineServer) isWorking(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(struct{ IsWorking bool }{IsWorking: s.ovenProgramWorker.IsWorking()})
-}
