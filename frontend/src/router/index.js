@@ -18,6 +18,36 @@ const routes = [
     ],
   },
   {
+    path: "/list-runs",
+    component: () => import("@/layouts/default/DefaultLayout.vue"),
+    children: [
+      {
+        path: "",
+        name: "ListProgramsRun",
+        // route level code-splitting
+        // this generates a separate chunk (Home-[hash].js) for this route
+        // which is lazy-loaded when the route is visited.
+        component: () => import("@/views/ListProgramsRunView.vue"),
+        meta: { title: "Programmi di cottura" },
+      },
+    ],
+  },
+  {
+    path: "/oven-run/:programName",
+    component: () => import("@/layouts/default/DefaultLayout.vue"),
+    children: [
+      {
+        path: "",
+        name: "ListProgramsRun",
+        // route level code-splitting
+        // this generates a separate chunk (Home-[hash].js) for this route
+        // which is lazy-loaded when the route is visited.
+        component: () => import("@/views/OvenRun.vue"),
+        meta: { title: "Cottura" },
+      },
+    ],
+  },
+  {
     path: "/tests",
     component: () => import("@/layouts/default/DefaultLayout.vue"),
     children: [

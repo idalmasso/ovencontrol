@@ -19,7 +19,6 @@ type controllerMachine interface {
 	temperatureReader
 	ovenprograms.Oven
 	InitConfig(c config.Config)
-	IsWorking() bool
 }
 
 // PiServer
@@ -114,6 +113,9 @@ func (s *MachineServer) Init(machine controllerMachine) {
 			})
 			processRouter.Route("/get-actual-process-data", func(r chi.Router) {
 				r.Get("/", s.getAllDataActualWork)
+			})
+			processRouter.Route("/start-process/{programName}", func(r chi.Router) {
+				r.Get("/", s.startProgram)
 			})
 		})
 		router.Route("/configuration", func(configRouter chi.Router) {

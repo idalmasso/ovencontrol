@@ -36,6 +36,9 @@ type OvenProgramWorker struct {
 	lastPointsToBeWritten              int
 }
 
+func (d OvenProgramWorker) GetRunningProgram() string {
+	return d.programName
+}
 func (d OvenProgramWorker) GetTimeSeconds() float64 {
 	return d.timeSeconds
 }

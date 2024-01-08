@@ -21,6 +21,10 @@ func (s *MachineServer) getAllDataActualWork(w http.ResponseWriter, r *http.Requ
 func (s *MachineServer) isWorking(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(struct {
-		IsWorking bool `json:"is-working"`
-	}{IsWorking: s.ovenProgramWorker.IsWorking()})
+		IsWorking   bool   `json:"is-working"`
+		ProgramName string `json:"program-name"`
+	}{
+		IsWorking:   s.ovenProgramWorker.IsWorking(),
+		ProgramName: s.ovenProgramWorker.GetRunningProgram(),
+	})
 }

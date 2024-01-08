@@ -1,5 +1,8 @@
 <template>
-  <ListPageWithButtons :listItems="listItems"></ListPageWithButtons>
+  <ListPageWithButtons
+    :listItems="listItems"
+    @buttonClicked="buttonClickedHandler"
+  ></ListPageWithButtons>
 </template>
 
 <script setup>
@@ -9,16 +12,22 @@ import ListPageWithButtons from "./parts/ListPageWithButtons.vue";
 const router = useRouter();
 const listItems = ref([
   {
-    button: { title: "Cottura", icon: "mdi-fire-circle" },
-    action: () => console.log("NOT IMPLEMENTED"),
+    title: "Cottura",
+    icon: "mdi-fire-circle",
+    name: "ListProgramsRun",
   },
   {
-    button: { title: "Tests", icon: "mdi-chart-timeline-variant-shimmer" },
-    action: () => router.push({ name: "ListTests" }),
+    title: "Tests",
+    icon: "mdi-chart-timeline-variant-shimmer",
+    name: "ListTests",
   },
   {
-    button: { title: "Configurazione", icon: "mdi-cog" },
-    action: () => router.push({ name: "ListConfigurations" }),
+    title: "Configurazione",
+    icon: "mdi-cog",
+    name: "ListConfigurations",
   },
 ]);
+function buttonClickedHandler(name) {
+  router.push({ name: name });
+}
 </script>

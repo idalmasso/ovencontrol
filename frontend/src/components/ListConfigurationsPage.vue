@@ -1,5 +1,8 @@
 <template>
-  <ListPageWithButtons :listItems="listItems"></ListPageWithButtons>
+  <ListPageWithButtons
+    :listItems="listItems"
+    @buttonClicked="buttonClickedHandler"
+  ></ListPageWithButtons>
 </template>
 
 <script setup>
@@ -9,12 +12,17 @@ import ListPageWithButtons from "./parts/ListPageWithButtons.vue";
 const router = useRouter();
 const listItems = ref([
   {
-    button: { title: "Configura programmi", icon: "mdi-tune-vertical-variant" },
-    action: () => router.push({ name: "ListProgramConfigurations" }),
+    title: "Configura programmi",
+    icon: "mdi-tune-vertical-variant",
+    name: "ListProgramConfigurations",
   },
   {
-    button: { title: "Configurazione parametri", icon: "mdi-wrench-cog" },
-    action: () => console.log("NOT IMPLEMENTED"),
+    title: "Configurazione parametri",
+    icon: "mdi-wrench-cog",
+    name: "",
   },
 ]);
+function buttonClickedHandler(name) {
+  router.push({ name: name });
+}
 </script>

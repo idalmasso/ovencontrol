@@ -6,9 +6,9 @@
       width="300"
       :class="['d-flex justify-center']"
     >
-      <v-icon size="250">{{ button.icon }}</v-icon>
+      <v-icon size="250">{{ icon }}</v-icon>
     </v-btn>
-    <div upper>{{ button.title }}</div>
+    <div upper>{{ title }}</div>
   </div>
 </template>
 <style>
@@ -17,5 +17,6 @@
 }
 </style>
 <script setup>
-defineProps(["button"]);
+import { defineProps } from "vue";
+defineProps(["title", "icon"]);
 </script>

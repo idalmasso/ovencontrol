@@ -29,10 +29,10 @@ func main() {
 		glog.Infoln("backend start process")
 	}
 	//controller := hwinterface.NewController()
-	controller := dummyinterface.DummyController{}
+	controller := &dummyinterface.DummyController{}
 
 	server := server.MachineServer{}
-	server.Init(&controller)
+	server.Init(controller)
 	server.ListenAndServe()
 
 }

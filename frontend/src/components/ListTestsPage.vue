@@ -1,5 +1,8 @@
 <template>
-  <ListPageWithButtons :listItems="listItems"></ListPageWithButtons>
+  <ListPageWithButtons
+    :listItems="listItems"
+    @buttonClicked="buttonClickedHandler"
+  ></ListPageWithButtons>
 </template>
 
 <script setup>
@@ -9,12 +12,17 @@ import ListPageWithButtons from "./parts/ListPageWithButtons.vue";
 const router = useRouter();
 const listItems = ref([
   {
-    button: { title: "Test temperatura", icon: "mdi-thermometer-check" },
-    action: () => router.push({ name: "TemperatureCheck" }),
+    title: "Test temperatura",
+    icon: "mdi-thermometer-check",
+    name: "TemperatureCheck",
   },
   {
-    button: { title: "Test rampa", icon: "mdi-finance" },
-    action: () => router.push({ name: "TestRamp" }),
+    title: "Test rampa",
+    icon: "mdi-finance",
+    name: "TestRamp",
   },
 ]);
+function buttonClickedHandler(name) {
+  router.push({ name: name });
+}
 </script>

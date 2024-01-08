@@ -1,12 +1,15 @@
 <template>
-  <ListPageWithButtons :listItems="listItems"></ListPageWithButtons>
+  <ListPageWithButtons
+    :listItems="listItems"
+    @buttonClicked="buttonClickedHandler"
+  ></ListPageWithButtons>
 </template>
 
 <script setup>
-//import { useRouter } from "vue-router";
-import { ref } from "vue";
+import { ref, defineEmits } from "vue";
 import ListPageWithButtons from "./parts/ListPageWithButtons.vue";
-//const router = useRouter();
+const emit = defineEmits({ programSelected: String });
+
 const getPrograms = () => {
   fetch("http://localhost:3333/api/configuration/programs").then((response) => {
     if (response.ok) {
@@ -15,11 +18,9 @@ const getPrograms = () => {
 
         listItems.value = Object.keys(data).map((name) => {
           return {
-            button: {
-              title: name,
-              icon: "mdi-wrench-cog",
-            },
-            action: () => console.log("NOT IMPLEMENTED"),
+            title: name,
+            icon: "mdi-wrench-cog",
+            name: name,
           };
         });
         programList.value = Object.values(data);
@@ -30,4 +31,8 @@ const getPrograms = () => {
 const programList = ref([]);
 const listItems = ref([]);
 getPrograms();
+function buttonClickedHandler(name) {
+  console.log("Emitted" + name);
+  emit("programSelected", name);
+}
 </script>

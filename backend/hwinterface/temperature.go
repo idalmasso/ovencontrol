@@ -1,10 +1,13 @@
 package hwinterface
 
-func (c piController) GetTemperature() (float64, error) {
-	value, err := c.analogInput.AnalogRead("0")
+import "log/slog"
+
+func (c piController) GetTemperature() float64 {
+	value, err := c.analogInput.AnalogRead()
 	if err != nil {
-		return 0, err
+		slog.Error("Error: %v", err)
+		return 0
 	}
-	ovenTemperature := float64(value) / 255 * 1350
-	return ovenTemperature, nil
+	ovenTemperature := float64(value)
+	return ovenTemperature
 }

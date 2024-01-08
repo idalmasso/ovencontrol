@@ -6,9 +6,14 @@
       ></v-row
     >
   </v-container>
-  <ListProgramConfigurationsPage />
+  <ListProgramsPage @buttonClicked="buttonClickedHandler" />
 </template>
 
 <script setup>
-import ListProgramConfigurationsPage from "@/components/ListProgramConfigurationsPage.vue";
+import { defineEmits } from "vue";
+import ListProgramsPage from "@/components/ListProgramsPage.vue";
+const emits = defineEmits({ programSelected: String });
+function buttonClickedHandler(name) {
+  emits("programSelected", name);
+}
 </script>
