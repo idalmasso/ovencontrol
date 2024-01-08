@@ -15,8 +15,8 @@ oven:
   weight: 24
   maxPower: 10000
 controller:
-  kpRamp: 0.9
-  kiRamp: 0.001
+  kpRamp: 0.1
+  kiRamp: 0.05
   kdRamp: 0.001
   kpMaintain: 0.01
   kiMaintain: 0.0001

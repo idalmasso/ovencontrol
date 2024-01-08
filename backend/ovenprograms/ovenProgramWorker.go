@@ -129,8 +129,7 @@ func (d *OvenProgramWorker) doRampUp(s StepPoint) {
 		if step != 0 {
 			derivative = (errorValue - previousError) / step
 		}
-		actualPercentual := d.oven.GetPercentual()
-		actualPercentual += d.kpRamp*errorValue + d.kiRamp*integral + d.kdRamp*derivative
+		actualPercentual := d.kpRamp*errorValue + d.kiRamp*integral + d.kdRamp*derivative
 		actualPercentual = min(actualPercentual, 1)
 		actualPercentual = max(actualPercentual, 0)
 		d.oven.SetPercentual(actualPercentual)
@@ -211,8 +210,8 @@ func (d *OvenProgramWorker) doRampDown(s StepPoint) {
 		if step != 0 {
 			derivative = (errorValue - previousError) / step
 		}
-		actualPercentual := d.oven.GetPercentual()
-		actualPercentual += d.kpRamp*errorValue + d.kiRamp*integral + d.kdRamp*derivative
+
+		actualPercentual := d.kpRamp*errorValue + d.kiRamp*integral + d.kdRamp*derivative
 		actualPercentual = min(actualPercentual, 1)
 		actualPercentual = max(actualPercentual, 0)
 		d.oven.SetPercentual(actualPercentual)
