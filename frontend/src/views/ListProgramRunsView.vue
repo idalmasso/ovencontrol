@@ -6,22 +6,22 @@
       ></v-row
     >
   </v-container>
-  <ListProgramPage @buttonClicked="buttonClickedHandler" />
+  <ListProgramsPage @buttonClicked="buttonClickedHandler" />
 </template>
 
 <script setup>
-import { defineEmits } from "vue";
+import { useRouter } from "vue-router";
 import { onBeforeMount } from "vue";
-import ListProgramPage from "@/components/ListProgramPage.vue";
-const emits = defineEmits({ programSelected: String });
+import ListProgramsPage from "@/components/ListProgramsPage.vue";
+const router=useRouter()
 onBeforeMount(() =>
   fetch("http://localhost:3333/api/processes/is-working").then((a) => {
     if (a.ok) {
       a.json().then((t) => {
         if (t["is-working"]) {
-          this.$router.push({
+          router.push({
             name: "OvenRun",
-            programName: t["program-name"],
+            params: {programName: t["program-name"]}
           });
         }
       });
@@ -29,6 +29,7 @@ onBeforeMount(() =>
   })
 );
 function buttonClickedHandler(name) {
-  emits("programSelected", name);
+  console.log(name)
+  router.push({name: "OvenRun", params:{"programName": name}})
 }
 </script>

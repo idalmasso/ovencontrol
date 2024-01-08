@@ -10,10 +10,9 @@
 </template>
 
 <script setup>
-import { defineEmits } from "vue";
 import ListProgramsPage from "@/components/ListProgramsPage.vue";
-const emits = defineEmits({ programSelected: String });
+
 function buttonClickedHandler(name) {
-  emits("programSelected", name);
+  console.log(name)
 }
 </script>

@@ -27,7 +27,7 @@ const routes = [
         // route level code-splitting
         // this generates a separate chunk (Home-[hash].js) for this route
         // which is lazy-loaded when the route is visited.
-        component: () => import("@/views/ListProgramsRunView.vue"),
+        component: () => import("@/views/ListProgramRunsView.vue"),
         meta: { title: "Programmi di cottura" },
       },
     ],
@@ -38,12 +38,13 @@ const routes = [
     children: [
       {
         path: "",
-        name: "ListProgramsRun",
+        name: "OvenRun",
         // route level code-splitting
         // this generates a separate chunk (Home-[hash].js) for this route
         // which is lazy-loaded when the route is visited.
         component: () => import("@/views/OvenRun.vue"),
         meta: { title: "Cottura" },
+        props: true
       },
     ],
   },

@@ -115,7 +115,7 @@ func (s *MachineServer) Init(machine controllerMachine) {
 				r.Get("/", s.getAllDataActualWork)
 			})
 			processRouter.Route("/start-process/{programName}", func(r chi.Router) {
-				r.Get("/", s.startProgram)
+				r.Post("/", s.startProgram)
 			})
 		})
 		router.Route("/configuration", func(configRouter chi.Router) {

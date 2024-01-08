@@ -1,5 +1,5 @@
 <template>
-  <OvenProgram start-url="http://localhost:3333/api/processes/test-ramp" />
+  <OvenProgram  />
 </template>
 
 <script setup>
