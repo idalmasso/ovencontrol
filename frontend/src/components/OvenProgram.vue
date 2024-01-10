@@ -1,9 +1,7 @@
 <template>
   <v-container>
     <v-row
-      ><v-btn
-        color="blue"
-        @click="$router.push({name:'Home'})"
+      ><v-btn color="blue" @click="$router.push({ name: 'Home' })"
         >Indietro</v-btn
       ></v-row
     >
@@ -37,7 +35,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, defineProps ,onMounted} from "vue";
+import { ref, onBeforeUnmount, defineProps, onMounted } from "vue";
 import { Scatter } from "vue-chartjs";
 import {
   Chart as ChartJS,
@@ -50,7 +48,7 @@ import {
 
 ChartJS.register(LinearScale, PointElement, LineElement, Tooltip, Legend);
 
-const props=defineProps({programName:String})
+const props = defineProps({ programName: String });
 const temp = ref(0);
 const tempExpected = ref(0);
 const isWorking = ref(false);
@@ -137,15 +135,14 @@ function IsWorkingEnabler() {
 }
 var timer = 0;
 const timerWorking = setInterval(IsWorkingEnabler, 1000);
-console.log(props)
-const programName = props['programName']
-let url="http://localhost:3333/api/processes/test-ramp"
-if(programName!=""){
-  url="http://localhost:3333/api/processes/start-process/"+programName
+console.log(props);
+const programName = props["programName"];
+let url = "http://localhost:3333/api/processes/test-ramp";
+if (programName != "") {
+  url = "http://localhost:3333/api/processes/start-process/" + programName;
 }
 function StartProgram() {
   if (!isWorking.value) {
-    
     fetch(url, {
       method: "POST",
     }).then((a) => {

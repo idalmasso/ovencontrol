@@ -11,17 +11,17 @@
 
 <script setup>
 import { useRouter } from "vue-router";
-import { onBeforeMount } from "vue";
+import { onMounted } from "vue";
 import ListProgramsPage from "@/components/ListProgramsPage.vue";
-const router=useRouter()
-onBeforeMount(() =>
+const router = useRouter();
+onMounted(() =>
   fetch("http://localhost:3333/api/processes/is-working").then((a) => {
     if (a.ok) {
       a.json().then((t) => {
         if (t["is-working"]) {
           router.push({
             name: "OvenRun",
-            params: {programName: t["program-name"]}
+            params: { programName: t["program-name"] },
           });
         }
       });
@@ -29,7 +29,7 @@ onBeforeMount(() =>
   })
 );
 function buttonClickedHandler(name) {
-  console.log(name)
-  router.push({name: "OvenRun", params:{"programName": name}})
+  console.log(name);
+  router.push({ name: "OvenRun", params: { programName: name } });
 }
 </script>
