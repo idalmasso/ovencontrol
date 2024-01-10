@@ -1,23 +1,26 @@
-hardware:
 server:
   distributionDirectory: ../../frontend/dist
-  ovenProgramFolder: ./programs
   port: 3333
-  testRampTimeMinutes: 1
+  ovenProgramFolder: ./programs
   testRampTemperature: 1000
+  testRampTimeMinutes: 1
 oven:
   length: 0.11
   height: 0.08
   width: 0.23
-  insulationWidths: [0.075, 0.05]
-  thermalConductivities: [0.3, 0.14]
+  insulationWidths:
+  - 0.075
+  - 0.05
+  thermalConductivities:
+  - 0.3
+  - 0.14
   thermalCapacity: 900
   weight: 24
   maxPower: 10000
 controller:
   kpRamp: 0.1
   kiRamp: 0.05
-  kdRamp: 0.001
+  kdRamp: 0.0012
   kpMaintain: 0.01
   kiMaintain: 0.0001
   kdMaintain: 0.0001

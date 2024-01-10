@@ -37,8 +37,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, defineProps } from "vue";
-import { onBeforeUnmount } from "vue";
+import { ref, reactive, defineProps ,onMounted} from "vue";
 import { Scatter } from "vue-chartjs";
 import {
   Chart as ChartJS,
@@ -48,8 +47,6 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { onMounted } from "vue";
-
 
 ChartJS.register(LinearScale, PointElement, LineElement, Tooltip, Legend);
 

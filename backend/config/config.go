@@ -7,14 +7,11 @@ import (
 )
 
 type Config struct {
-	Hardware struct {
-		GearRatio float64 `yaml:"gearRatio" json:"gearRatio,string"`
-	} `yaml:"hardware" json:"hardware"`
 	Server struct {
 		DistributionDirectory string  `yaml:"distributionDirectory" json:"distribution-directory"`
 		Port                  int     `yaml:"port" json:"port,string"`
 		OvenProgramFolder     string  `yaml:"ovenProgramFolder" json:"oven-program-folder"`
-		TestRampTemperature   float64 `yaml:"testRampTemperature" json:"test-ramp0temperature"`
+		TestRampTemperature   float64 `yaml:"testRampTemperature" json:"test-ramp-temperature"`
 		TestRampTimeMinutes   float64 `yaml:"testRampTimeMinutes" json:"test-ramp-time-minutes"`
 	} `yaml:"server" json:"server"`
 	Oven struct {

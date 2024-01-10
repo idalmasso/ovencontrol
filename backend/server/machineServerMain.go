@@ -124,8 +124,11 @@ func (s *MachineServer) Init(machine controllerMachine) {
 				r.Post("/", s.addUpdateProgram)
 				r.Get("/{programName}", s.getProgram)
 			})
-			//configRouter.Get("/", s.getConfig)
-			//configRouter.Put("/", s.updateConfig)
+			configRouter.Route("/oven-config", func(r chi.Router) {
+				r.Get("/", s.getConfig)
+				r.Post("/", s.updateConfig)
+			})
+
 		})
 	})
 

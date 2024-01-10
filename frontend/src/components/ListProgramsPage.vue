@@ -8,6 +8,7 @@
 <script setup>
 import { ref, defineEmits } from "vue";
 import ListPageWithButtons from "./parts/ListPageWithButtons.vue";
+import { onBeforeMount } from "vue";
 const emit = defineEmits({ programSelected: String });
 
 const getPrograms = () => {
@@ -27,7 +28,10 @@ const getPrograms = () => {
   });
 };
 const listItems = ref([]);
-getPrograms();
+onBeforeMount(()=>{
+  getPrograms();
+})
+
 function buttonClickedHandler(name) {
   emit("programSelected", name);
 }

@@ -19,7 +19,7 @@ const listItems = ref([
   {
     title: "Configurazione parametri",
     icon: "mdi-wrench-cog",
-    name: "",
+    name: "OvenConfig",
   },
 ]);
 function buttonClickedHandler(name) {
