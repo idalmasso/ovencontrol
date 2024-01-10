@@ -57,6 +57,16 @@ const isWorking = ref(false);
 var temperatureData = [];
 var temperatureExpected = [];
 const chart = ref(null);
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: {
+    x: { type: "linear", min: 0 },
+    y: { type: "linear", min: 0, max: 1400 },
+  },
+};
+
 const chartData = {
   datasets: [
     {
@@ -133,7 +143,6 @@ let url="http://localhost:3333/api/processes/test-ramp"
 if(programName!=""){
   url="http://localhost:3333/api/processes/start-process/"+programName
 }
-console.log(programName)
 function StartProgram() {
   if (!isWorking.value) {
     
@@ -149,15 +158,6 @@ function StartProgram() {
     });
   }
 }
-
-const chartOptions = reactive({
-  responsive: true,
-  maintainAspectRatio: false,
-  scales: {
-    x: { type: "linear", min: 0 },
-    y: { type: "linear", min: 0, max: 1000 },
-  },
-});
 
 onMounted(() => {
   IsWorkingEnabler().then(() => {

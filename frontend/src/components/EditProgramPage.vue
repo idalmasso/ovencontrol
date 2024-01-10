@@ -2,6 +2,9 @@
     
 <v-container>
     <h2>Programma: {{ ovenProgramContainer.ovenProgram['name'] }}</h2>
+    <v-row style="height: 400px">
+      <Scatter :data="chartData" :options="chartOptions" ref="chart" />
+    </v-row>
     <v-form @submit.prevent="saveData">
         <v-text-field label="Nome programma" v-model="ovenProgramContainer.ovenProgram['name']"></v-text-field>
         <v-label for="color">Colore icona </v-label>
@@ -49,16 +52,67 @@
 </template>
 <script setup>
 import { useRouter } from "vue-router";
-import {defineProps, reactive, onMounted} from "vue"
+import {defineProps, ref,reactive, onMounted, watch} from "vue"
+import { Scatter } from "vue-chartjs";
+import {
+  Chart as ChartJS,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+
+ChartJS.register(LinearScale, PointElement, LineElement, Tooltip, Legend);
+var temperatureData = [{x:0,y:0}];
 const props =defineProps({programName:String})
 const router=useRouter()
+
 const ovenProgramContainer = reactive({ovenProgram:{name:"",
 "icon-color":"#00AAAA",
 "points":[],
 "air-closed-at-degrees":"30"
 }})
 const mask='!#XXXXXXXX'
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: {
+    x: { type: "linear", min: 0 },
+    y: { type: "linear", min: 0, max: 1400 },
+  },
+};
+const chartData = {
+  datasets: [
+    {
+      label: "Temperatura",
+      borderColor: "red",
+      backgroundColor: "red",
+      showLine: true,
+      data: temperatureData,
+    }]
+}
+const chart = ref(null);
+function recalc_chart(points){
+    temperatureData = [{x:0, y:0}]
+    var t=0
+    for(const v of points){
+        console.log(v)
+        t+=parseFloat(v['time-minutes'])
+        temperatureData.push({x:parseFloat(t), y:parseFloat(v['temperature'])})
+    }
+    chartData["datasets"][0]["data"] = temperatureData;
+    if (chart.value !== null) {
+        chart.value.chart.data = chartData;
+        chart.value.chart.update();
+    }
+    console.log(temperatureData)
+}
 
+watch(ovenProgramContainer.ovenProgram.points, (newValue)=>{
+    recalc_chart(newValue)
+})
 const saveData=()=>{
     if (ovenProgramContainer.ovenProgram.name!==""){
         fetch('http://localhost:3333/api/configuration/programs', {method: "POST",body:JSON.stringify(ovenProgramContainer.ovenProgram) }).then((a)=>
@@ -82,7 +136,9 @@ onMounted(()=>{
         fetch('http://localhost:3333/api/configuration/programs/'+props.programName).then((response)=>{
             if(response.ok){
                 response.json().then((data)=>{
-                    ovenProgramContainer.ovenProgram=data})
+                    ovenProgramContainer.ovenProgram=data
+                    recalc_chart(data.points)
+                })
             } else {
                 router.back()
             }
