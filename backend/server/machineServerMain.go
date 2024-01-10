@@ -122,6 +122,7 @@ func (s *MachineServer) Init(machine controllerMachine) {
 			configRouter.Route("/programs", func(r chi.Router) {
 				r.Get("/", s.getPrograms)
 				r.Post("/", s.addUpdateProgram)
+				r.Get("/{programName}", s.getProgram)
 			})
 			//configRouter.Get("/", s.getConfig)
 			//configRouter.Put("/", s.updateConfig)

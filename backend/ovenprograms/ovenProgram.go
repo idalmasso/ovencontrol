@@ -8,14 +8,15 @@ import (
 )
 
 type OvenProgram struct {
-	Name              string
-	Points            []StepPoint
-	AirCloseAtDegrees float64
+	Name              string      `json:"name"`
+	IconColor         string      `json:"icon-color"`
+	Points            []StepPoint `json:"points"`
+	AirCloseAtDegrees float64     `json:"air-closed-at-degrees,string"`
 }
 
 type StepPoint struct {
-	Temperature float64
-	TimeMinutes float64
+	Temperature float64 `json:"temperature,string"`
+	TimeMinutes float64 `json:"time-minutes,string"`
 }
 
 func (s StepPoint) TimeSeconds() float64 {

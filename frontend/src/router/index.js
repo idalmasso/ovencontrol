@@ -94,6 +94,52 @@ const routes = [
     ],
   },
   {
+    path: "/configurations/edit-program/:programName",
+    component: () => import("@/layouts/default/DefaultLayout.vue"),
+    children: [
+      {
+        path: "",
+        name: "EditOvenProgram",
+        // route level code-splitting
+        // this generates a separate chunk (Home-[hash].js) for this route
+        // which is lazy-loaded when the route is visited.
+        component: () => import("@/views/EditProgramView.vue"),
+        meta: { title: "MODIFICA PROGRAMMA" },
+        props: true
+      },
+    ],
+  },
+  {
+    path: "/configurations/edit-program",
+    component: () => import("@/layouts/default/DefaultLayout.vue"),
+    children: [
+      {
+        path: "",
+        name: "NewOvenProgram",
+        // route level code-splitting
+        // this generates a separate chunk (Home-[hash].js) for this route
+        // which is lazy-loaded when the route is visited.
+        component: () => import("@/views/EditProgramView.vue"),
+        meta: { title: "NUOVO PROGRAMMA" }
+      },
+    ],
+  },
+  {
+    path: "/configurations/programs",
+    component: () => import("@/layouts/default/DefaultLayout.vue"),
+    children: [
+      {
+        path: "",
+        name: "ListProgramConfigurations",
+        // route level code-splitting
+        // this generates a separate chunk (Home-[hash].js) for this route
+        // which is lazy-loaded when the route is visited.
+        component: () => import("@/views/ListProgramConfigurationsView.vue"),
+        meta: { title: "PROGRAMMI FORNO" },
+      },
+    ],
+  },
+  {
     path: "/tests/temperature-check",
     component: () => import("@/layouts/default/DefaultLayout.vue"),
     children: [

@@ -5,6 +5,7 @@
         <ListPageButton
           :title="listItem.title"
           :icon="listItem.icon"
+          :color="listItem.color"
           @click="$emit('buttonClicked', listItem.name)"
         ></ListPageButton>
       </v-col>

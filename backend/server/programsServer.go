@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/idalmasso/ovencontrol/backend/ovenprograms"
 )
 
@@ -25,5 +26,19 @@ func (s *MachineServer) addUpdateProgram(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(s.ovenProgramManager.Programs)
+	json.NewEncoder(w).Encode(s.ovenProgramManager.Programs()[program.Name])
+}
+
+func (s *MachineServer) getProgram(w http.ResponseWriter, r *http.Request) {
+	programName := chi.URLParam(r, "programName")
+	if program, ok := s.ovenProgramManager.Programs()[programName]; ok {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(program)
+		return
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(struct{ Error string }{Error: "Program not found"})
+		return
+	}
+
 }

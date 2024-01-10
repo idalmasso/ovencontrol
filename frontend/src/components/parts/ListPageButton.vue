@@ -1,7 +1,7 @@
 <template>
   <div class="align-center text-center list-page-button">
     <v-btn
-      color="blue"
+      :color="color"
       height="300"
       width="300"
       :class="['d-flex justify-center']"
@@ -18,5 +18,5 @@
 </style>
 <script setup>
 import { defineProps } from "vue";
-defineProps(["title", "icon"]);
+defineProps({"title":String, "icon":String, color:{type: String, default:"blue"}});
 </script>
