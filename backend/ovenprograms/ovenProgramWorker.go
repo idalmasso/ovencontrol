@@ -32,6 +32,7 @@ type OvenProgramWorker struct {
 	TargetTemperature                  float64
 	SavedRunFolder                     string
 	runName                            string
+	endRequest                         bool
 	programHistory                     ProgramDataPointArray
 	lastPointsToBeWritten              int
 }
@@ -52,12 +53,24 @@ func (d *OvenProgramWorker) IsWorking() bool {
 	return d.isWorking
 }
 
+func (d *OvenProgramWorker) RequestStopProgram() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.endRequest = true
+}
+
+func (d OvenProgramWorker) shouldStopProgram() bool {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.endRequest
+}
 func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram) {
 	d.mu.Lock()
 	if d.isWorking {
 		return
 	}
 	d.isWorking = true
+	d.endRequest = false
 	d.mu.Unlock()
 	d.programName = program.Name
 	d.runName = time.Now().Format("2006-01-02T15-04-05") + "-" + program.Name
@@ -77,7 +90,10 @@ func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram) {
 		}
 		d.oven.InitStartProgram()
 		d.writeHeader()
-		defer func() { d.oven.EndProgram() }()
+		defer func() {
+			d.oven.SetPercentual(0)
+			d.oven.EndProgram()
+		}()
 		firstPoint := program.Points[0]
 		if firstPoint.Temperature > d.oven.GetTemperature() {
 			d.doRampUp(firstPoint)
@@ -85,6 +101,11 @@ func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram) {
 			d.maintainTemperature(firstPoint)
 		} else {
 			d.doRampDown(firstPoint)
+		}
+		if d.shouldStopProgram() {
+			d.Save()
+			d.programName = ""
+			return
 		}
 		lastTemp := firstPoint.Temperature
 		for _, s := range program.Points[1:] {
@@ -96,6 +117,11 @@ func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram) {
 				d.doRampDown(s)
 			}
 			lastTemp = s.Temperature
+			if d.shouldStopProgram() {
+				d.Save()
+				d.programName = ""
+				return
+			}
 		}
 		d.Save()
 		d.programName = ""
@@ -111,6 +137,9 @@ func (d *OvenProgramWorker) doRampUp(s StepPoint) {
 	lastNow := time.Now()
 	step := 0.0
 	for ovenTemperature < s.Temperature {
+		if d.shouldStopProgram() {
+			return
+		}
 		step = time.Since(lastNow).Seconds()
 		lastNow = time.Now()
 		d.timeSeconds += step
@@ -155,6 +184,9 @@ func (d *OvenProgramWorker) maintainTemperature(s StepPoint) {
 	lastNow := time.Now()
 	step := 0.0
 	for ovenTemperature < s.Temperature {
+		if d.shouldStopProgram() {
+			return
+		}
 		step = time.Since(lastNow).Seconds()
 		d.timeSeconds += step
 		timeSave += step
@@ -193,6 +225,9 @@ func (d *OvenProgramWorker) doRampDown(s StepPoint) {
 	lastNow := time.Now()
 	step := 0.0
 	for d.oven.GetTemperature() > s.Temperature {
+		if d.shouldStopProgram() {
+			return
+		}
 		step = time.Since(lastNow).Seconds()
 		d.timeSeconds += step
 		timeSave += step

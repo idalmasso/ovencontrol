@@ -54,3 +54,14 @@ func (o OvenProgramManager) SaveProgram(ovenProgram OvenProgram) error {
 	o.programs[ovenProgram.Name] = ovenProgram
 	return nil
 }
+
+func (o OvenProgramManager) DeleteProgram(ovenProgramName string) error {
+
+	if _, ok := o.programs[ovenProgramName]; ok {
+		err := o.programs[ovenProgramName].DeleteOvenProgramFile(o.folder)
+		delete(o.programs, ovenProgramName)
+		return err
+	}
+
+	return nil
+}

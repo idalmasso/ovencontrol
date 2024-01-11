@@ -1,36 +1,42 @@
 <template>
   <v-container>
     <v-row
-      ><v-btn color="blue" @click="$router.push({ name: 'Home' })"
+      ><v-col md="4" cols=3><v-btn color="blue" @click="$router.push({ name: 'Home' })"
         >Indietro</v-btn
-      ></v-row
+      ></v-col ><v-col  md="4"
+        class="ms-auto" cols=3><v-btn v-if="!isWorking" color="blue" @click="StartProgram"
+        >Start</v-btn
+      ><v-btn v-else color="blue" @click="StopProgram"
+        >Stop</v-btn
+      ></v-col></v-row
     >
-    <v-row style="height: 400px">
-      <Scatter :data="chartData" :options="chartOptions" ref="chart" />
+    <v-row justify="center" style="height: 200px ">
+      <Scatter :data="chartData" :options="chartOptions" ref="chart" width="500px" />
     </v-row>
     <v-row text-center align-content="center" justify="center">
-      <v-card class="mx-auto" width="400" title="Temperatura forno">
+      <v-card class="mx-auto" width="300"   >
+        <v-card-title class="subheading pt-2">Temperatura forno</v-card-title>
         <v-card-text class="py-0">
           <v-row align="center" no-gutters>
-            <span class="text-h3 font-weight-bold">{{ temp }}</span>
-            <span class="text-h3 font-weight-bold">&deg;C </span>
+            <span class="text-h7 font-weight-bold">{{ temp }}</span>
+            <span class="text-h7 font-weight-bold">&deg;C </span>
           </v-row>
         </v-card-text>
       </v-card>
-      <v-card class="mx-auto" width="400" title="Temperatura aspettata">
+      <v-card class="mx-auto" width="300" >
+        <v-card-title class="subheading pt-2">Temperatura programma</v-card-title>
         <v-card-text class="py-0">
           <v-row align="center" no-gutters>
-            <span class="text-h3 font-weight-bold">{{ tempExpected }}</span>
-            <span class="text-h3 font-weight-bold">&deg;C </span>
+            <span class="text-h7 font-weight-bold">{{ tempExpected }}</span>
+            <span class="text-h7 font-weight-bold">&deg;C </span>
           </v-row>
         </v-card-text>
       </v-card>
     </v-row>
     <v-row
-      ><v-btn :disabled="isWorking" color="blue" @click="StartProgram"
-        >Start</v-btn
       ></v-row
     >
+    
   </v-container>
 </template>
 
@@ -151,6 +157,19 @@ function StartProgram() {
         temperatureExpected = [];
         getTemp();
         timer = setInterval(getTemp, 10000);
+      }
+    });
+  }
+}
+
+function StopProgram(){
+  if(isWorking.value){
+    fetch("http://localhost:3333/api/processes/stop-process", {
+      method: "POST",
+    }).then((a) => {
+      if (!a.ok) {
+        a.json().then(data=>console.log(data))
+        
       }
     });
   }

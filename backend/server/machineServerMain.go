@@ -117,12 +117,17 @@ func (s *MachineServer) Init(machine controllerMachine) {
 			processRouter.Route("/start-process/{programName}", func(r chi.Router) {
 				r.Post("/", s.startProgram)
 			})
+			processRouter.Route("/stop-process", func(r chi.Router) {
+				r.Post("/", s.stopProgram)
+			})
+
 		})
 		router.Route("/configuration", func(configRouter chi.Router) {
 			configRouter.Route("/programs", func(r chi.Router) {
 				r.Get("/", s.getPrograms)
 				r.Post("/", s.addUpdateProgram)
 				r.Get("/{programName}", s.getProgram)
+				r.Delete("/{programName}", s.deleteProgram)
 			})
 			configRouter.Route("/oven-config", func(r chi.Router) {
 				r.Get("/", s.getConfig)

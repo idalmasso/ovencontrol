@@ -53,3 +53,8 @@ func ReadOvenProgram(filename string) (OvenProgram, error) {
 	err := p.ReadFromFile(filename)
 	return p, err
 }
+
+func (p OvenProgram) DeleteOvenProgramFile(folderName string) error {
+	err := os.Remove(filepath.Join(folderName, p.Name) + ".json")
+	return err
+}

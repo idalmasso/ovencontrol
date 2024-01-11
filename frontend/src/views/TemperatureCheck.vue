@@ -5,8 +5,8 @@
         >Indietro</v-btn
       ></v-row
     >
-    <v-row style="height: 400px">
-      <Scatter :data="chartData" :options="chartOptions" ref="chart" />
+    <v-row justify="center" style="height: 200px ">
+      <Scatter :data="chartData" :options="chartOptions" ref="chart" width="500px" />
     </v-row>
     <v-row text-center align-content="center" justify="center">
       <v-card class="mx-auto" width="400" title="Temperatura forno">

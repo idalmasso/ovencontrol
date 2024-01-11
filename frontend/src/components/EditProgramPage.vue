@@ -2,9 +2,7 @@
     
 <v-container>
     <h2>Programma: {{ ovenProgramContainer.ovenProgram['name'] }}</h2>
-    <v-row style="height: 400px">
-      <Scatter :data="chartData" :options="chartOptions" ref="chart" />
-    </v-row>
+    
     <v-form @submit.prevent="saveData">
         <v-text-field label="Nome programma" v-model="ovenProgramContainer.ovenProgram['name']"></v-text-field>
         <v-label for="color">Colore icona </v-label>
@@ -44,10 +42,14 @@
                 <v-btn class="pa-2 ma-2" @click="removePoint(point)" color="red">Elimina</v-btn>
             </v-col>
         </v-row>
+        <v-row justify="center" style="height: 200px" >
+      <Scatter :data="chartData" :options="chartOptions" ref="chart" />
+    </v-row>
         <v-row no-gutters class="pa-2 ma-2">
             <v-btn type="submit" block color="success">Salva</v-btn>
         </v-row>
     </v-form>
+    <v-btn @click="deleteProgram" color="red">ELIMINA</v-btn>
 </v-container>
 </template>
 <script setup>
@@ -123,6 +125,17 @@ const saveData=()=>{
         })
     }
 }
+const deleteProgram=()=>{
+    if (ovenProgramContainer.ovenProgram.name!==""){
+        fetch('http://localhost:3333/api/configuration/programs/'+ovenProgramContainer.ovenProgram.name, {method: "DELETE" }).then((a)=>
+        {
+            if(a.ok){
+                router.push({ name: 'ListProgramConfigurations' })
+            }
+        })
+    }
+}
+
 const removePoint=(point)=>{
     ovenProgramContainer.ovenProgram['points']=ovenProgramContainer.ovenProgram['points'].filter((a)=>a!==point)
 }

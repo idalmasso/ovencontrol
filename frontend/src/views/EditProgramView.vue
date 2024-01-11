@@ -7,8 +7,6 @@
           >Indietro</v-btn>
         </v-col>
       </v-row>
-      
-      
     </v-container>
     <EditProgramPage :programName="props.programName" />
 </template>

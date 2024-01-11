@@ -42,3 +42,13 @@ func (s *MachineServer) getProgram(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
+
+func (s *MachineServer) deleteProgram(w http.ResponseWriter, r *http.Request) {
+	programName := chi.URLParam(r, "programName")
+	if err := s.ovenProgramManager.DeleteProgram(programName); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(struct{ Error string }{Error: "Program not found"})
+	}
+	w.WriteHeader(http.StatusOK)
+
+}

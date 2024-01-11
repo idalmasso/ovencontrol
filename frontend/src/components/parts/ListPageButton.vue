@@ -2,11 +2,11 @@
   <div class="align-center text-center list-page-button">
     <v-btn
       :color="color"
-      height="300"
-      width="300"
+      height="200"
+      width="200"
       :class="['d-flex justify-center']"
     >
-      <v-icon size="250">{{ icon }}</v-icon>
+      <v-icon size="150">{{ icon }}</v-icon>
     </v-btn>
     <div upper>{{ title }}</div>
   </div>
