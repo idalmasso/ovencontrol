@@ -25,6 +25,7 @@ type OvenProgramWorker struct {
 	timeSeconds                        float64
 	oven                               Oven
 	mu                                 *sync.RWMutex
+	ticker                             *time.Ticker
 	isWorking                          bool
 	kpRamp, kiRamp, kdRamp             float64
 	kpMaintain, kiMaintain, kdMaintain float64
@@ -129,6 +130,7 @@ func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram) {
 }
 
 func (d *OvenProgramWorker) doRampUp(s StepPoint) {
+
 	d.TargetTemperature = d.oven.GetTemperature()
 	integral, previousError, derivative, temperatureVariance := 0.0, 0.0, 0.0, 0.0
 	desiredVariance := (s.Temperature - d.oven.GetTemperature()) / s.TimeSeconds()
@@ -136,12 +138,17 @@ func (d *OvenProgramWorker) doRampUp(s StepPoint) {
 	timeSave := 0.0
 	lastNow := time.Now()
 	step := 0.0
-	for ovenTemperature < s.Temperature {
+	d.ticker = time.NewTicker(time.Duration(d.stepTime) * time.Second)
+	defer d.ticker.Stop()
+	for now := range d.ticker.C {
 		if d.shouldStopProgram() {
-			return
+			break
 		}
-		step = time.Since(lastNow).Seconds()
-		lastNow = time.Now()
+		if ovenTemperature >= s.Temperature {
+			break
+		}
+		step = (now.Sub(lastNow)).Seconds()
+		lastNow = now
 		d.timeSeconds += step
 		timeSave += step
 		newTemperature := d.oven.GetTemperature()
@@ -170,26 +177,35 @@ func (d *OvenProgramWorker) doRampUp(s StepPoint) {
 			d.lastPointsToBeWritten = 0
 			timeSave = 0
 		}
-
-		time.Sleep(time.Duration(d.stepTime) * time.Second)
 	}
+	d.Save()
+
 }
 func (d *OvenProgramWorker) maintainTemperature(s StepPoint) {
 	d.TargetTemperature = d.oven.GetTemperature()
 	integral, previousError, derivative := 0.0, 0.0, 0.0
 	d.TargetTemperature = s.Temperature
-	timeSave := 0.0
 	first := true
-	ovenTemperature := d.oven.GetTemperature()
+	ovenTemperature := 0.0
+	timeSave := 0.0
+	totalTime := 0.0
 	lastNow := time.Now()
 	step := 0.0
-	for ovenTemperature < s.Temperature {
+	d.ticker = time.NewTicker(time.Duration(d.stepTime) * time.Second)
+	defer d.ticker.Stop()
+	for now := range d.ticker.C {
 		if d.shouldStopProgram() {
-			return
+			break
 		}
-		step = time.Since(lastNow).Seconds()
+		if totalTime >= s.TimeSeconds() {
+			break
+		}
+		totalTime += step
+		step = (now.Sub(lastNow)).Seconds()
+		lastNow = now
 		d.timeSeconds += step
 		timeSave += step
+		ovenTemperature = d.oven.GetTemperature()
 		errorValue := s.Temperature - ovenTemperature
 		if first {
 			first = false
@@ -211,10 +227,8 @@ func (d *OvenProgramWorker) maintainTemperature(s StepPoint) {
 			d.lastPointsToBeWritten = 0
 			timeSave = 0
 		}
-		lastNow = time.Now()
-		time.Sleep(time.Duration(d.stepTime) * time.Second)
-		ovenTemperature = d.oven.GetTemperature()
 	}
+	d.Save()
 }
 func (d *OvenProgramWorker) doRampDown(s StepPoint) {
 	d.TargetTemperature = d.oven.GetTemperature()
@@ -224,11 +238,17 @@ func (d *OvenProgramWorker) doRampDown(s StepPoint) {
 	timeSave := 0.0
 	lastNow := time.Now()
 	step := 0.0
-	for d.oven.GetTemperature() > s.Temperature {
+	d.ticker = time.NewTicker(time.Duration(d.stepTime) * time.Second)
+	defer d.ticker.Stop()
+	for now := range d.ticker.C {
 		if d.shouldStopProgram() {
-			return
+			break
 		}
-		step = time.Since(lastNow).Seconds()
+		if ovenTemperature <= s.Temperature {
+			break
+		}
+		step = (now.Sub(lastNow)).Seconds()
+		lastNow = now
 		d.timeSeconds += step
 		timeSave += step
 		newTemperature := d.oven.GetTemperature()
@@ -258,9 +278,8 @@ func (d *OvenProgramWorker) doRampDown(s StepPoint) {
 			d.lastPointsToBeWritten = 0
 			timeSave = 0
 		}
-		lastNow = time.Now()
-		time.Sleep(time.Duration(d.stepTime) * time.Second)
 	}
+	d.Save()
 }
 func (d *OvenProgramWorker) Save() error {
 	f, err := os.OpenFile(filepath.Join(d.SavedRunFolder, d.runName+".txt"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
