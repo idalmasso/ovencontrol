@@ -1,4 +1,4 @@
-package drivers
+package spi
 
 // setBit is used to set a bit at a given position to 1.
 func setBit(n uint8, pos uint8) uint8 {

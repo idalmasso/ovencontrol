@@ -10,7 +10,7 @@ import (
 	"flag"
 
 	"github.com/golang/glog"
-	"github.com/idalmasso/ovencontrol/backend/dummyinterface"
+	"github.com/idalmasso/ovencontrol/backend/hwinterface"
 	"github.com/idalmasso/ovencontrol/backend/server"
 )
 
@@ -28,8 +28,8 @@ func main() {
 	if glog.V(3) {
 		glog.Infoln("backend start process")
 	}
-	//controller := hwinterface.NewController()
-	controller := &dummyinterface.DummyController{}
+	controller := hwinterface.NewController()
+	//controller := &dummyinterface.DummyController{}
 
 	server := server.MachineServer{}
 	server.Init(controller)

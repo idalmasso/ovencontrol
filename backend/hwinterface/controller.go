@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/idalmasso/ovencontrol/backend/config"
-	"github.com/idalmasso/ovencontrol/backend/hwinterface/drivers"
+	"github.com/idalmasso/ovencontrol/backend/hwinterface/drivers/spi"
 	"gobot.io/x/gobot/v2/drivers/gpio"
 	"gobot.io/x/gobot/v2/platforms/raspi"
 )
@@ -16,7 +16,7 @@ type piController struct {
 	buttonInput *gpio.ButtonDriver
 	//ledOk             *gpio.LedDriver
 	ledPower            *gpio.LedDriver
-	analogInput         *drivers.MPC9600Driver
+	analogInput         *spi.MAX31856Driver
 	mutex               *sync.RWMutex
 	buttonPressFunc     func()
 	actualProcessName   string
@@ -129,13 +129,8 @@ func NewController() *piController {
 		glog.Errorln(err)
 	}
 
-	address := 0x60
-	analogInput := drivers.NewMPC9600Driver(r)
-
-	analogInput.SetAddress(address)
-	analogInput.SetBus(r.DefaultI2cBus())
+	analogInput := spi.NewMAX31856Driver(r)
 	analogInput.Start()
-
 	pi := piController{buttonInput: buttonInput, analogInput: analogInput, ledPower: ledPower}
 	buttonInput.On(gpio.ButtonRelease, pi.buttonPressed)
 	return &pi
