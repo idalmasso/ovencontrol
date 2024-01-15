@@ -106,7 +106,7 @@ func NewMAX31856Driver(a spi.Connector, options ...func(spi.Config)) *MAX31856Dr
 		// # set thermocouple type
 		d.SetThermocoupleType(d.thermocoupleType)
 
-		d.SetAverageSample(4)
+		//d.SetAverageSample(4)
 
 		d.SetNoiseRejection(50)
 
