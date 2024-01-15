@@ -1,6 +1,7 @@
 package spi
 
 import (
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -11,7 +12,7 @@ import (
 // MAX31856Driver is a driver for the MAX31856 thermocouple reader.
 type MAX31856Driver struct {
 	*Driver
-	ThermocoupleType ThermocoupleType
+	thermocoupleType ThermocoupleType
 	mu               *sync.Mutex
 }
 
@@ -56,7 +57,7 @@ const (
 	MAX31856_FAULT_OPEN    uint8 = 0x01
 )
 
-var AVGSEL_CONSTS = map[int]uint16{1: 0x00, 2: 0x10, 4: 0x20, 8: 0x30, 16: 0x40}
+var avgSelectionMap = map[int]uint8{1: 0x00, 2: 0x10, 4: 0x20, 8: 0x30, 16: 0x40}
 
 type ThermocoupleType uint8
 
@@ -89,7 +90,7 @@ const (
 func NewMAX31856Driver(a spi.Connector, options ...func(spi.Config)) *MAX31856Driver {
 	d := &MAX31856Driver{
 		Driver:           NewDriver(a, "MAX31856", spi.WithMode(1)),
-		ThermocoupleType: S,
+		thermocoupleType: S,
 		mu:               &sync.Mutex{},
 	}
 
@@ -99,18 +100,74 @@ func NewMAX31856Driver(a spi.Connector, options ...func(spi.Config)) *MAX31856Dr
 	d.afterStart = func() error {
 		slog.Info("after start")
 		//# assert on any fault
-		d.WriteUint8(MAX31856_MASK_REG, 0x0)
+		d.writeUint8(MAX31856_MASK_REG, 0x0)
 		//  # configure open circuit faults
-		d.WriteUint8(MAX31856_CR0_REG, MAX31856_CR0_OCFAULT0)
+		d.writeUint8(MAX31856_CR0_REG, MAX31856_CR0_OCFAULT0)
 		// # set thermocouple type
-		d.SetThermocoupleType(d.ThermocoupleType)
+		d.SetThermocoupleType(d.thermocoupleType)
 
-		v, err := d.ReadUint8(MAX31856_CR1_REG)
-		slog.Info("value reg1", "value", v, "err", err)
+		d.SetAverageSample(4)
+
+		d.SetNoiseRejection(50)
+
 		return nil
 	}
 
 	return d
+}
+
+// SetAverageSample sets the number of samples averaged per read
+func (d *MAX31856Driver) SetAverageSample(nSamples int) error {
+	avgValue, ok := avgSelectionMap[nSamples]
+	if !ok {
+		slog.Error("SetAverageSample get wrong data", "nSamples", nSamples)
+		return fmt.Errorf("invalid nsamples")
+	}
+	if reg1, err := d.readUint8(MAX31856_CR1_REG); err != nil {
+		slog.Error("SetAverageSample read error", "err", err)
+		return fmt.Errorf("read error")
+	} else {
+		reg1 &= 0b10001111
+		reg1 |= avgValue
+		err = d.writeUint8(MAX31856_CR1_REG, reg1)
+		return err
+	}
+
+}
+
+// SetNoiseRejection sets the filter (50 or 60Hz)
+func (d *MAX31856Driver) SetNoiseRejection(frequency int) error {
+	if frequency != 50 && frequency != 60 {
+		slog.Error("SetNoiseRejection get wrong data", "frequency", frequency)
+		return fmt.Errorf("invalid frequency")
+	}
+	if reg0, err := d.readUint8(MAX31856_CR0_REG); err != nil {
+		slog.Error("SetNoiseRejection read error", "err", err)
+		return fmt.Errorf("read error")
+	} else {
+		if frequency == 50 {
+			reg0 |= MAX31856_CR0_50HZ
+		} else {
+			reg0 &= ^MAX31856_CR0_50HZ
+		}
+
+		err = d.writeUint8(MAX31856_CR0_REG, reg0)
+		return err
+	}
+
+}
+
+func (d *MAX31856Driver) SetThermocoupleType(thermocoupleType ThermocoupleType) error {
+	//# get current value of CR1 Reg
+	d.thermocoupleType = thermocoupleType
+	confReg1, err := d.readUint8(MAX31856_CR1_REG)
+	if err != nil {
+		return err
+	}
+	confReg1 &= 0xF0
+	//# add the new value for the TC type
+	confReg1 |= uint8(thermocoupleType) & 0x0F
+	return d.writeUint8(MAX31856_CR1_REG, confReg1)
 }
 
 // Starts a one-shot measurement and returns immediately.
@@ -119,24 +176,23 @@ func NewMAX31856Driver(a spi.Connector, options ...func(spi.Config)) *MAX31856Dr
 func (d *MAX31856Driver) InitOneShotMeasurement() error {
 	//read the current value of the first config register
 	slog.Info("InitOneShotMeasurement")
-	slog.Info("InitOneShotMeasurement Before readByte")
-	confReg0, err := d.ReadUint8(MAX31856_CR0_REG)
+
+	confReg0, err := d.readUint8(MAX31856_CR0_REG)
 	if err != nil {
 		slog.Error("Error", "err", err)
 		return err
 	}
-	slog.Info("InitOneShotMeasurement After Readbyte", "readValue", confReg0)
 	// and the complement to guarantee the autoconvert bit is unset
 	confReg0 |= (MAX31856_CR0_AUTOCONVERT)
 	// or the oneshot bit to ensure it is set
 	confReg0 |= MAX31856_CR0_1SHOT
-	slog.Info("InitOneShotMeasurement BeforeWrite", "writeValue", confReg0)
+
 	// write it back with the new values, prompting the sensor to perform a measurement
-	err = d.WriteUint8(MAX31856_CR0_REG, confReg0)
+	err = d.writeUint8(MAX31856_CR0_REG, confReg0)
 	if err != nil {
 		slog.Error("InitOneShotMeasurement write Error", "err", err)
 	}
-	confReg0, err = d.ReadUint8(MAX31856_CR0_REG)
+	confReg0, err = d.readUint8(MAX31856_CR0_REG)
 	if err != nil {
 		slog.Error("InitOneShotMeasurement Error", "err", err)
 	}
@@ -149,7 +205,7 @@ func (d *MAX31856Driver) InitOneShotMeasurement() error {
 // A False value means measurement is complete.
 func (d *MAX31856Driver) OneShotPending() bool {
 	slog.Info("OneShotPending")
-	confReg0, err := d.ReadUint8(MAX31856_CR0_REG)
+	confReg0, err := d.readUint8(MAX31856_CR0_REG)
 	if err != nil {
 		slog.Error("OneShotPending Error", "err", err)
 	}
@@ -204,20 +260,7 @@ func (d *MAX31856Driver) UnpackTemperature() float64 {
 	return float64(tempInt) / 4096.0
 }
 
-func (d *MAX31856Driver) SetThermocoupleType(thermocoupleType ThermocoupleType) error {
-	//# get current value of CR1 Reg
-
-	confReg1, err := d.ReadUint8(MAX31856_CR1_REG)
-	if err != nil {
-		return err
-	}
-	confReg1 &= 0xF0
-	//# add the new value for the TC type
-	confReg1 |= uint8(thermocoupleType) & 0x0F
-	return d.WriteUint8(MAX31856_CR1_REG, confReg1)
-}
-
-func (d *MAX31856Driver) WriteUint8(address, val byte) error {
+func (d *MAX31856Driver) writeUint8(address, val byte) error {
 	//NEEDED: Address with 7th bit to 1 are write
 	address = (address | 0x80) & 0xFF
 	if err := d.connection.WriteByteData(address, val); err != nil {
@@ -226,20 +269,11 @@ func (d *MAX31856Driver) WriteUint8(address, val byte) error {
 	return nil
 }
 
-func (d *MAX31856Driver) ReadUint8(address byte) (uint8, error) {
+func (d *MAX31856Driver) readUint8(address byte) (uint8, error) {
 	readVal := make([]byte, 1)
 	address &= 0x7F
 	if err := d.connection.ReadCommandData([]byte{address}, readVal); err != nil {
 		return 0, err
 	}
 	return uint8(readVal[0]), nil
-}
-
-func (d *MAX31856Driver) ReadUint16(address byte) (uint16, error) {
-	readVal := make([]byte, 2)
-	address &= 0x7F
-	if err := d.connection.ReadCommandData([]byte{address}, readVal); err != nil {
-		return 0, err
-	}
-	return (uint16(readVal[0]) << 8) | uint16(readVal[1]), nil
 }
