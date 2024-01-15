@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -151,7 +152,9 @@ func FileServer(router *chi.Mux, root string) {
 	fs := http.FileServer(http.Dir(root))
 
 	router.Get("/*", func(w http.ResponseWriter, r *http.Request) {
-		if _, err := os.Stat(root + r.RequestURI); os.IsNotExist(err) {
+		slog.Info("Dist")
+		if _, err := os.Stat(filepath.Join(root, r.URL.Path)); os.IsNotExist(err) {
+			slog.Info("not exist", "uri", r.URL.Path)
 			http.StripPrefix(r.RequestURI, fs).ServeHTTP(w, r)
 		} else {
 			fs.ServeHTTP(w, r)
