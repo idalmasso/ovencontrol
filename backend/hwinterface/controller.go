@@ -129,7 +129,7 @@ func NewController() *piController {
 		glog.Errorln(err)
 	}
 
-	analogInput := spi.NewMAX31856Driver(r)
+	analogInput := spi.NewMAX31856Driver(r, slog.Default())
 	analogInput.Start()
 	pi := piController{buttonInput: buttonInput, analogInput: analogInput, ledPower: ledPower}
 	buttonInput.On(gpio.ButtonRelease, pi.buttonPressed)
