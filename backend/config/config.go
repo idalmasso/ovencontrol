@@ -25,15 +25,17 @@ type Config struct {
 		MaxPower              float64   `yaml:"maxPower" json:"max-power,string"`
 	} `yaml:"oven" json:"oven"`
 	Controller struct {
-		KpRamp         float64 `yaml:"kpRamp" json:"kp-ramp,string"`
-		KiRamp         float64 `yaml:"kiRamp" json:"ki-ramp,string"`
-		KdRamp         float64 `yaml:"kdRamp" json:"kd-ramp,string"`
-		KpMaintain     float64 `yaml:"kpMaintain" json:"kp-maintain,string"`
-		KiMaintain     float64 `yaml:"kiMaintain" json:"ki-maintain,string"`
-		KdMaintain     float64 `yaml:"kdMaintain" json:"kd-maintain,string"`
-		StepTime       float64 `yaml:"stepTime" json:"step-time,string"`
-		StepSave       float64 `yaml:"saveTime" json:"save-time,string"`
-		SavedRunFolder string  `yaml:"savedRunFolder" json:"saved-run-folder"`
+		KpRamp            float64 `yaml:"kpRamp" json:"kp-ramp,string"`
+		KiRamp            float64 `yaml:"kiRamp" json:"ki-ramp,string"`
+		KdRamp            float64 `yaml:"kdRamp" json:"kd-ramp,string"`
+		KpMaintain        float64 `yaml:"kpMaintain" json:"kp-maintain,string"`
+		KiMaintain        float64 `yaml:"kiMaintain" json:"ki-maintain,string"`
+		KdMaintain        float64 `yaml:"kdMaintain" json:"kd-maintain,string"`
+		StepTime          float64 `yaml:"stepTime" json:"step-time,string"`
+		StepSave          float64 `yaml:"saveTime" json:"save-time,string"`
+		SavedRunFolder    string  `yaml:"savedRunFolder" json:"saved-run-folder"`
+		UsbPath           string  `yaml:"usbPath" json:"usb-path"`
+		UsbSaveFolderName string  `yaml:"usbSaveFolderName" json:"usb-save-folder-name"`
 	} `yaml:"controller" json:"controller"`
 }
 

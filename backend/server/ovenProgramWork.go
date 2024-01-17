@@ -79,3 +79,15 @@ func (s *MachineServer) startProgram(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
+
+func (s *MachineServer) moveAllRunsToUsb(w http.ResponseWriter, r *http.Request) {
+	saver := ovenprograms.NewOvenProgramSaver(s.configuration.Controller.UsbPath,
+		s.configuration.Controller.UsbSaveFolderName,
+		s.configuration.Controller.SavedRunFolder)
+	if err := saver.MoveAllRuns(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(struct{ Error string }{Error: err.Error()})
+	} else {
+		w.WriteHeader(http.StatusOK)
+	}
+}

@@ -34,6 +34,18 @@
             v-model="configData.config.controller['save-time']"
             type="number">
         </v-text-field>
+        <v-text-field label="Cartella salvataggio run interna" 
+            v-model="configData.config.controller['saved-run-folder']"
+            >
+        </v-text-field>
+        <v-text-field label="Usb device path" 
+            v-model="configData.config.controller['usb-path']"
+            >
+        </v-text-field>
+        <v-text-field label="Usb nome cartella" 
+            v-model="configData.config.controller['usb-save-folder-name']"
+            >
+        </v-text-field>
     </v-container>
     <v-container>
         <h2>Server</h2>    
@@ -119,7 +131,9 @@ const configData = reactive({
             "kd-maintain": "0.0001",
             "step-time": "1",
             "save-time": "60",
-            "saved-run-folder": "./runs"
+            "saved-run-folder": "./runs",
+            "usb-path":"/dev/sda1",
+            "usb-save-folder-name":"ovenruns"
         }        
 }
 });

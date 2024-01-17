@@ -134,6 +134,9 @@ func (s *MachineServer) Init(machine controllerMachine) {
 				r.Get("/", s.getConfig)
 				r.Post("/", s.updateConfig)
 			})
+			configRouter.Route("/move-runs-usb", func(r chi.Router) {
+				r.Post("/", s.moveAllRunsToUsb)
+			})
 
 		})
 	})

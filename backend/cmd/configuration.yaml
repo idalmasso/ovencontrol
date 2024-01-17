@@ -27,3 +27,5 @@ controller:
   stepTime: 1
   saveTime: 60
   savedRunFolder: ./runs
+  usbPath: /mnt/HD6
+  usbSaveFolderName: ovenruns

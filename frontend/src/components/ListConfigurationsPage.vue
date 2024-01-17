@@ -17,12 +17,30 @@ const listItems = ref([
     name: "ListProgramConfigurations",
   },
   {
+    title: "Esporta programmi terminati",
+    icon: "mdi-content-save-move",
+    name: "Export",
+  },
+  {
     title: "Configurazione parametri",
     icon: "mdi-wrench-cog",
     name: "OvenConfig",
   },
 ]);
 function buttonClickedHandler(name) {
-  router.push({ name: name });
+  console.log("NAME:"+name)
+  if (name=="Export"){
+    fetch("http://localhost:3333/api/configuration/move-runs-usb", {method:"POST"}).then((response) => {
+    if (response.ok) {
+        alert("Success!")
+    } else {
+      response.json().then(data=>
+      alert("Failed:"+data.Error)
+      )
+    }
+    })
+  } else {
+   router.push({ name: name });
+  }
 }
 </script>
