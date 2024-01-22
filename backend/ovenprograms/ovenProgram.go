@@ -15,8 +15,11 @@ type OvenProgram struct {
 }
 
 type StepPoint struct {
-	Temperature float64 `json:"temperature,string"`
-	TimeMinutes float64 `json:"time-minutes,string"`
+	SegmentName                  string  `json:"segment-name"`
+	Temperature                  float64 `json:"temperature,string"`
+	TimeMinutes                  float64 `json:"time-minutes,string"`
+	RestartFromLastAscendingRamp bool    `json:"restart-from-last-ascending-ramp"`
+	TimeAfterNoRestartMinutes    float64 `json:"time-after-no-restart-minutes,string"`
 }
 
 func (s StepPoint) TimeSeconds() float64 {

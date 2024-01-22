@@ -2,6 +2,7 @@ package ovenprograms
 
 import (
 	"encoding/csv"
+	"log/slog"
 	"math"
 	"os"
 	"path/filepath"
@@ -65,6 +66,36 @@ func (d OvenProgramWorker) shouldStopProgram() bool {
 	defer d.mu.RUnlock()
 	return d.endRequest
 }
+func (d *OvenProgramWorker) startedProgram() error {
+	f, err := os.OpenFile(filepath.Join(d.SavedRunFolder, "work.txt"), os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	encoder := csv.NewWriter(f)
+	err = encoder.Write([]string{d.programName, ""})
+	encoder.Flush()
+	return err
+}
+
+func (d *OvenProgramWorker) endedProgram() {
+	d.Save()
+	d.programName = ""
+	os.Remove(filepath.Join(d.SavedRunFolder, "work.txt"))
+}
+func (d *OvenProgramWorker) changedStepPoint(s StepPoint) error {
+	f, err := os.OpenFile(filepath.Join(d.SavedRunFolder, "work.txt"), os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	encoder := csv.NewWriter(f)
+	err = encoder.Write([]string{d.programName, s.SegmentName})
+	encoder.Flush()
+	return err
+}
 func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram) {
 	d.mu.Lock()
 	if d.isWorking {
@@ -77,6 +108,7 @@ func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram) {
 	d.runName = time.Now().Format("2006-01-02T15-04-05") + "-" + program.Name
 	d.programHistory = make([]ProgramDataPoint, 0)
 	d.lastPointsToBeWritten = 0
+	d.startedProgram()
 	go func(program OvenProgram) {
 
 		defer func() {
@@ -89,6 +121,7 @@ func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram) {
 		if len(program.Points) == 0 {
 			return
 		}
+
 		d.oven.InitStartProgram()
 		d.writeHeader()
 		defer func() {
@@ -96,7 +129,9 @@ func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram) {
 			d.oven.EndProgram()
 		}()
 		firstPoint := program.Points[0]
+		d.changedStepPoint(firstPoint)
 		if firstPoint.Temperature > d.oven.GetTemperature() {
+
 			d.doRampUp(firstPoint)
 		} else if firstPoint.Temperature == d.oven.GetTemperature() {
 			d.maintainTemperature(firstPoint)
@@ -104,12 +139,12 @@ func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram) {
 			d.doRampDown(firstPoint)
 		}
 		if d.shouldStopProgram() {
-			d.Save()
-			d.programName = ""
+			d.endedProgram()
 			return
 		}
 		lastTemp := firstPoint.Temperature
 		for _, s := range program.Points[1:] {
+			d.changedStepPoint(s)
 			if s.Temperature > lastTemp {
 				d.doRampUp(s)
 			} else if s.Temperature == lastTemp {
@@ -124,13 +159,12 @@ func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram) {
 				return
 			}
 		}
-		d.Save()
-		d.programName = ""
+
+		d.endedProgram()
 	}(program)
 }
 
 func (d *OvenProgramWorker) doRampUp(s StepPoint) {
-
 	d.TargetTemperature = d.oven.GetTemperature()
 	integral, previousError, derivative, temperatureVariance := 0.0, 0.0, 0.0, 0.0
 	desiredVariance := (s.Temperature - d.oven.GetTemperature()) / s.TimeSeconds()
@@ -170,7 +204,7 @@ func (d *OvenProgramWorker) doRampUp(s StepPoint) {
 		actualPercentual = max(actualPercentual, 0)
 		d.oven.SetPercentual(actualPercentual)
 		previousError = errorValue
-		d.programHistory = append(d.programHistory, createDataPoint(d.programName, d.timeSeconds, d.TargetTemperature, newTemperature, actualPercentual))
+		d.programHistory = append(d.programHistory, createDataPoint(d.programName, s.SegmentName, d.timeSeconds, d.TargetTemperature, newTemperature, actualPercentual))
 		d.lastPointsToBeWritten++
 		if timeSave > d.stepSave {
 			d.Save()
@@ -220,7 +254,7 @@ func (d *OvenProgramWorker) maintainTemperature(s StepPoint) {
 		actualPercentual = max(actualPercentual, 0)
 		d.oven.SetPercentual(actualPercentual)
 		previousError = errorValue
-		d.programHistory = append(d.programHistory, createDataPoint(d.programName, d.timeSeconds, d.TargetTemperature, ovenTemperature, actualPercentual))
+		d.programHistory = append(d.programHistory, createDataPoint(d.programName, s.SegmentName, d.timeSeconds, d.TargetTemperature, ovenTemperature, actualPercentual))
 		d.lastPointsToBeWritten++
 		if timeSave > d.stepSave {
 			d.Save()
@@ -271,7 +305,7 @@ func (d *OvenProgramWorker) doRampDown(s StepPoint) {
 		actualPercentual = max(actualPercentual, 0)
 		d.oven.SetPercentual(actualPercentual)
 		previousError = errorValue
-		d.programHistory = append(d.programHistory, createDataPoint(d.programName, d.timeSeconds, d.TargetTemperature, newTemperature, actualPercentual))
+		d.programHistory = append(d.programHistory, createDataPoint(d.programName, s.SegmentName, d.timeSeconds, d.TargetTemperature, newTemperature, actualPercentual))
 		d.lastPointsToBeWritten++
 		if timeSave > d.stepSave {
 			d.Save()
@@ -304,7 +338,8 @@ func (d *OvenProgramWorker) writeHeader() error {
 	encoder.Flush()
 	return err
 }
-func NewOvenProgramWorker(oven Oven, config config.Config) *OvenProgramWorker {
+
+func NewOvenProgramWorker(oven Oven, config config.Config, ovenProgramManager OvenProgramManager) *OvenProgramWorker {
 	o := OvenProgramWorker{oven: oven}
 	o.mu = &sync.RWMutex{}
 	o.isWorking = false
@@ -324,6 +359,34 @@ func NewOvenProgramWorker(oven Oven, config config.Config) *OvenProgramWorker {
 			}
 		}
 	}
+	if _, err := os.Stat(filepath.Join(o.SavedRunFolder, "work.txt")); err != nil {
+		if !os.IsNotExist(err) {
+			//maybe we need to restart the program!
+			f, err := os.OpenFile(filepath.Join(o.SavedRunFolder, "work.txt"), os.O_RDONLY, 0644)
+			if err != nil {
+				slog.Debug("Cannot open work file", "err", err)
+				o.endedProgram()
+			}
+			defer f.Close()
+			rec, err := csv.NewReader(f).Read()
+			if err != nil {
+				slog.Debug("Cannot read work file", "err", err)
+				o.endedProgram()
+			}
+			program, ok := ovenProgramManager.Programs()[rec[0]]
+			if !ok {
+				slog.Debug("Cannot find program")
+				o.endedProgram()
+			}
+			newProgram := OvenProgram{Name: program.Name, AirCloseAtDegrees: program.AirCloseAtDegrees}
+			found := false
+
+			if found {
+				o.StartOvenProgram(newProgram)
+			}
+		}
+	}
+
 	return &o
 }
 

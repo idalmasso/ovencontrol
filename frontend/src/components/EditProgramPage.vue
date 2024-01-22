@@ -27,20 +27,38 @@
 
         <v-row  ga-3 v-for="point in ovenProgramContainer.ovenProgram['points']">
             <v-col cols="3">
+                <v-text-field label="Segmento" 
+                    v-model="point['segment-name']">
+                </v-text-field> 
+            </v-col>
+            <v-col cols="2">
                 <v-text-field label="Temperatura" 
                     v-model="point['temperature']"
                     type="number">
                 </v-text-field>
             </v-col>
-            <v-col cols="3">
+            <v-col cols="2">
                 <v-text-field label="Tempo minuti" 
                     v-model="point['time-minutes']"
+                    type="number">
+                </v-text-field> 
+            </v-col>
+            <v-col cols="3">
+                <v-checkbox label="Ricomincia se offline" 
+                    v-model="point['restart-from-last-ascending-ramp']"
+                    type="checkbox">
+                </v-checkbox> 
+            </v-col>
+            <v-col cols="2">
+                <v-text-field label="Minuti no restart" 
+                    v-model="point['time-after-no-restart-minutes']"
                     type="number">
                 </v-text-field> 
             </v-col>
             <v-col  cols="3">
                 <v-btn class="pa-2 ma-2" @click="removePoint(point)" color="red">Elimina</v-btn>
             </v-col>
+            <v-divider></v-divider>
         </v-row>
         <v-row justify="center" style="height: 200px" >
       <Scatter :data="chartData" :options="chartOptions" ref="chart" />
