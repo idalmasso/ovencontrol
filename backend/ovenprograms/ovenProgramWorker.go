@@ -194,6 +194,9 @@ func (d *OvenProgramWorker) doRamp(s StepPoint, isUpRamp bool) error {
 		d.timeSeconds += step
 		timeSave += step
 		newTemperature, err = d.oven.GetTemperature()
+		if err != nil {
+			return err
+		}
 		temperatureVariance = newTemperature - ovenTemperature
 		ovenTemperature = newTemperature
 		expectedVariance := desiredVariance * step
