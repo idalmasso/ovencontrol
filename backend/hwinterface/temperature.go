@@ -1,13 +1,11 @@
 package hwinterface
 
-import "log/slog"
-
-func (c piController) GetTemperature() float64 {
+func (c piController) GetTemperature() (float64, error) {
 	value, err := c.analogInput.GetTemperature()
 	if err != nil {
-		slog.Error("Error: %v", err)
-		return 0
+		c.logger.Error("Error: %v", err)
+		return 0, err
 	}
 
-	return value
+	return value, nil
 }
