@@ -54,7 +54,7 @@ func (c *Config) ReadFromFile(filename string) (err error) {
 func (c *Config) SaveToFile(filename string) (err error) {
 	f, err := os.Create(filename)
 	if err != nil {
-		return err
+		return
 	}
 	defer f.Close()
 	encoder := yaml.NewEncoder(f)

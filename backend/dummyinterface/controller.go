@@ -4,6 +4,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/go-chi/httplog/v2"
 	"github.com/idalmasso/ovencontrol/backend/config"
 )
 
@@ -13,6 +14,7 @@ type DummyController struct {
 	actualPercentual                                                                      float64
 	timeMultiplier                                                                        float64
 	isWorking                                                                             bool
+	logger                                                                                *httplog.Logger
 }
 
 func (d DummyController) GetTemperature() float64 {
@@ -23,21 +25,6 @@ func (d *DummyController) IsWorking() bool {
 	return d.isWorking
 }
 
-/*
-	func (d *DummyController) TryStartTestRamp(temperature, timeMinutes float64) bool {
-		d.mu.Lock()
-		defer d.mu.Unlock()
-		if d.isWorking {
-			return false
-		}
-		d.isWorking = true
-
-		s := config.StepPoint{Temperature: temperature, TimeMinutes: timeMinutes}
-		program := config.OvenProgram{Name: "TestProgram", Points: []config.StepPoint{s}}
-		d.followOvenProgram(program)
-		return true
-	}
-*/
 func (d *DummyController) InitConfig(c config.Config) {
 
 	d.actualPercentual = 0
@@ -76,6 +63,9 @@ func (d *DummyController) GetMaxPower() float64 {
 }
 func (d *DummyController) SetPercentual(percent float64) {
 	d.actualPercentual = percent
+}
+func (d *DummyController) SetLogger(logger *httplog.Logger) {
+	d.logger = logger
 }
 func (d *DummyController) InitStartProgram() {
 	if !d.isWorking {

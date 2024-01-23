@@ -10,6 +10,7 @@ type temperatureReader interface {
 }
 
 func (s *MachineServer) getTemperature(w http.ResponseWriter, r *http.Request) {
+	s.logger.Debug("getTemperature called")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(struct {
 		Temperature float64 `json:"oven-temperature"`
@@ -17,6 +18,7 @@ func (s *MachineServer) getTemperature(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *MachineServer) getTemperaturesProcess(w http.ResponseWriter, r *http.Request) {
+	s.logger.Debug("getTemperaturesProcess called")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(struct {
 		Temperature         float64 `json:"oven-temperature"`

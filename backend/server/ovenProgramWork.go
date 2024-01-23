@@ -10,6 +10,7 @@ import (
 )
 
 func (s *MachineServer) getAllDataActualWork(w http.ResponseWriter, r *http.Request) {
+	s.logger.Debug("getAllDataActualWork called")
 	w.WriteHeader(http.StatusOK)
 	step := 1
 	var err error
@@ -22,6 +23,7 @@ func (s *MachineServer) getAllDataActualWork(w http.ResponseWriter, r *http.Requ
 	json.NewEncoder(w).Encode(s.ovenProgramWorker.GetAllDataActualWork(step))
 }
 func (s *MachineServer) isWorking(w http.ResponseWriter, r *http.Request) {
+	s.logger.Debug("isWorking called")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(struct {
 		IsWorking   bool   `json:"is-working"`
@@ -33,6 +35,7 @@ func (s *MachineServer) isWorking(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *MachineServer) stopProgram(w http.ResponseWriter, r *http.Request) {
+	s.logger.Debug("stopProgram called")
 	if s.ovenProgramWorker.IsWorking() {
 		s.ovenProgramWorker.RequestStopProgram()
 		w.WriteHeader(http.StatusOK)

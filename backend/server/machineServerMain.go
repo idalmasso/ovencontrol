@@ -20,6 +20,7 @@ type controllerMachine interface {
 	temperatureReader
 	ovenprograms.Oven
 	InitConfig(c config.Config)
+	SetLogger(logger *httplog.Logger)
 }
 
 // PiServer
@@ -30,6 +31,7 @@ type MachineServer struct {
 	Router             chi.Router
 	machine            controllerMachine
 	ovenProgramWorker  *ovenprograms.OvenProgramWorker
+	logger             *httplog.Logger
 }
 
 // ListenAndServe is the main server procedure that only wraps http.ListenAndServe
@@ -47,7 +49,8 @@ func (s *MachineServer) ListenAndServe() {
 // Init initialize the server router and set the controllerMachine needed to do the work
 func (s *MachineServer) Init(machine controllerMachine) {
 	// Logger
-	logger := httplog.NewLogger("oven-logger", httplog.Options{
+
+	s.logger = httplog.NewLogger("oven-logger", httplog.Options{
 		// JSON:             true,
 		LogLevel:         slog.LevelDebug,
 		Concise:          true,
@@ -63,15 +66,18 @@ func (s *MachineServer) Init(machine controllerMachine) {
 		QuietDownPeriod: 10 * time.Second,
 		// SourceFieldName: "source",
 	})
+
 	s.configuration = &config.Config{}
 	if err := s.configuration.ReadFromFile("configuration.yaml"); err != nil {
+		s.logger.Error("Error", "error", err)
 		panic("cannot read configuration file")
 	}
+
 	var err error
 	s.ovenProgramManager, err = ovenprograms.NewOvenProgramManager(s.configuration.Server.OvenProgramFolder)
 
 	if err != nil {
-		slog.Error("Error", err)
+		s.logger.Error("Error", "error", err)
 		panic("Something wrong")
 	}
 	s.machine = machine
@@ -89,7 +95,7 @@ func (s *MachineServer) Init(machine controllerMachine) {
 		AllowCredentials: false,
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
-	s.Router.Use(httplog.RequestLogger(logger))
+	s.Router.Use(httplog.RequestLogger(s.logger))
 	s.Router.Use(middleware.Heartbeat("/ping"))
 	s.Router.Use(middleware.RequestID)
 	s.Router.Use(middleware.RealIP)
@@ -97,7 +103,7 @@ func (s *MachineServer) Init(machine controllerMachine) {
 	s.Router.Use(middleware.Recoverer)
 	s.Router.Use(middleware.Timeout(60 * time.Second))
 
-	FileServer(s.Router.(*chi.Mux), s.configuration.Server.DistributionDirectory)
+	s.FileServer(s.Router.(*chi.Mux), s.configuration.Server.DistributionDirectory)
 	s.Router.Route("/api", func(router chi.Router) {
 		router.Route("/processes", func(processRouter chi.Router) {
 			processRouter.Route("/get-temperature", func(r chi.Router) {
@@ -151,13 +157,13 @@ func (s *MachineServer) updateMachineFromConfig() {
 // FileServer conveniently sets up a http.FileServer handler to serve
 // static files from a http.FileSystem.
 // FileServer is serving static files.
-func FileServer(router *chi.Mux, root string) {
+func (s MachineServer) FileServer(router *chi.Mux, root string) {
 	fs := http.FileServer(http.Dir(root))
 
 	router.Get("/*", func(w http.ResponseWriter, r *http.Request) {
-		slog.Info("Dist")
+
 		if _, err := os.Stat(filepath.Join(root, r.URL.Path)); os.IsNotExist(err) {
-			slog.Info("not exist", "uri", r.URL.Path)
+			s.logger.DebugContext(r.Context(), "not exist", "uri", r.URL.Path)
 			http.StripPrefix(r.RequestURI, fs).ServeHTTP(w, r)
 		} else {
 			fs.ServeHTTP(w, r)

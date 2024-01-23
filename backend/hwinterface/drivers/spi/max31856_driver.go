@@ -2,7 +2,6 @@ package spi
 
 import (
 	"fmt"
-	"log/slog"
 	"sync"
 	"time"
 
@@ -14,11 +13,19 @@ type MAX31856Driver struct {
 	*Driver
 	thermocoupleType ThermocoupleType
 	mu               *sync.Mutex
-	logger           *slog.Logger
+	logger           Logger
 }
 
 type FaultState struct {
 	Highthresh, Lowthresh, Refinlow, Refinhigh, Rtdinlow, Ovuv bool
+}
+type Logger interface {
+	Debug(msg string, args ...any)
+	Error(msg string, args ...any)
+}
+
+func (d *MAX31856Driver) SetLogger(logger Logger) {
+	d.logger = logger
 }
 
 const (
@@ -88,10 +95,9 @@ const (
 //	 spi.WithMode(int):    	 mode to use with this driver
 //	 spi.WithBitCount(int):   number of bits to use with this driver
 //	 spi.WithSpeed(int64):    speed in Hz to use with this driver
-func NewMAX31856Driver(a spi.Connector, logger *slog.Logger, options ...func(spi.Config)) *MAX31856Driver {
+func NewMAX31856Driver(a spi.Connector, options ...func(spi.Config)) *MAX31856Driver {
 	d := &MAX31856Driver{
 		Driver:           NewDriver(a, "MAX31856", spi.WithMode(1)),
-		logger:           logger,
 		thermocoupleType: S,
 		mu:               &sync.Mutex{},
 	}
@@ -100,7 +106,7 @@ func NewMAX31856Driver(a spi.Connector, logger *slog.Logger, options ...func(spi
 		option(d)
 	}
 	d.afterStart = func() error {
-		d.logger.Info("after start")
+		d.logger.Debug("after start")
 		//# assert on any fault
 		d.writeUint8(MAX31856_MASK_REG, 0x0)
 		//  # configure open circuit faults
@@ -116,7 +122,7 @@ func NewMAX31856Driver(a spi.Connector, logger *slog.Logger, options ...func(spi
 
 // SetAverageSample sets the number of samples averaged per read
 func (d *MAX31856Driver) SetAverageSample(nSamples int) error {
-	d.logger.Info("SetAverageSample", "nSamples", nSamples)
+	d.logger.Debug("SetAverageSample", "nSamples", nSamples)
 	avgValue, ok := avgSelectionMap[nSamples]
 	if !ok {
 		d.logger.Error("SetAverageSample get wrong data", "nSamples", nSamples)
@@ -134,7 +140,7 @@ func (d *MAX31856Driver) SetAverageSample(nSamples int) error {
 }
 
 func (d *MAX31856Driver) SetThermocoupleType(thermocoupleType ThermocoupleType) error {
-	d.logger.Info("SetThermocoupleType", "thermocoupleType", thermocoupleType)
+	d.logger.Debug("SetThermocoupleType", "thermocoupleType", thermocoupleType)
 	//# get current value of CR1 Reg
 	d.thermocoupleType = thermocoupleType
 	confReg1, err := d.readUint8(MAX31856_CR1_REG)
@@ -149,7 +155,7 @@ func (d *MAX31856Driver) SetThermocoupleType(thermocoupleType ThermocoupleType) 
 
 // SetNoiseRejection sets the filter (50 or 60Hz)
 func (d *MAX31856Driver) SetNoiseRejection(frequency int) error {
-	d.logger.Info("SetNoiseRejection", "frequency", frequency)
+	d.logger.Debug("SetNoiseRejection", "frequency", frequency)
 	if frequency != 50 && frequency != 60 {
 		d.logger.Error("SetNoiseRejection get wrong data", "frequency", frequency)
 		return fmt.Errorf("invalid frequency")
@@ -175,7 +181,7 @@ func (d *MAX31856Driver) SetNoiseRejection(frequency int) error {
 // Check the status of the measurement with `oneshot_pending`; when it is false,
 func (d *MAX31856Driver) InitOneShotMeasurement() error {
 	//read the current value of the first config register
-	d.logger.Info("InitOneShotMeasurement")
+	d.logger.Debug("InitOneShotMeasurement")
 
 	confReg0, err := d.readUint8(MAX31856_CR0_REG)
 	if err != nil {
@@ -200,7 +206,7 @@ func (d *MAX31856Driver) InitOneShotMeasurement() error {
 // A True value means the measurement is still ongoing.
 // A False value means measurement is complete.
 func (d *MAX31856Driver) OneShotPending() bool {
-	d.logger.Info("OneShotPending")
+	d.logger.Debug("OneShotPending")
 	confReg0, err := d.readUint8(MAX31856_CR0_REG)
 	if err != nil {
 		d.logger.Error("OneShotPending Error", "err", err)
@@ -214,7 +220,7 @@ func (d *MAX31856Driver) waitOneshot() {
 	}
 }
 func (d *MAX31856Driver) performOneShotMeasurement() error {
-	d.logger.Info("performOneShotMeasurement")
+	d.logger.Debug("performOneShotMeasurement")
 	if err := d.InitOneShotMeasurement(); err != nil {
 		d.logger.Error("performOneShotMeasurement err", "err", err)
 		return err
@@ -228,7 +234,7 @@ func (d *MAX31856Driver) performOneShotMeasurement() error {
 //
 //	Return value is in degrees Celsius.
 func (d *MAX31856Driver) GetTemperature() (float64, error) {
-	d.logger.Info("GetTemperature")
+	d.logger.Debug("GetTemperature")
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if err := d.performOneShotMeasurement(); err != nil {
@@ -240,7 +246,7 @@ func (d *MAX31856Driver) GetTemperature() (float64, error) {
 
 // Reads the probe temperature from the register
 func (d *MAX31856Driver) UnpackTemperature() float64 {
-	d.logger.Info("UnpackTemperature")
+	d.logger.Debug("UnpackTemperature")
 	rawTemp := make([]byte, 3)
 	d.connection.ReadBlockData(MAX31856_LTCBH_REG, rawTemp)
 	d.logger.Debug("UnpackTemperature read", "data", rawTemp)
@@ -258,9 +264,9 @@ func (d *MAX31856Driver) UnpackTemperature() float64 {
 func (d *MAX31856Driver) writeUint8(address, val byte) error {
 	//NEEDED: Address with 8th bit to 1 are write
 	address |= 0x80
-	//d.logger.Info("Write Address", "addr", address, "val", val)
+	//d.logger.Debug("Write Address", "addr", address, "val", val)
 	if err := d.connection.WriteByteData(address, val); err != nil {
-		d.logger.Info("writeUint8 Write error", "err", err)
+		d.logger.Debug("writeUint8 Write error", "err", err)
 		return err
 	}
 	return nil
@@ -269,7 +275,7 @@ func (d *MAX31856Driver) writeUint8(address, val byte) error {
 func (d *MAX31856Driver) readUint8(address byte) (uint8, error) {
 	address &= 0x7F
 	if val, err := d.connection.ReadByteData(address); err != nil {
-		d.logger.Info("readUint8 Read error", "err", err)
+		d.logger.Debug("readUint8 Read error", "err", err)
 		return 0, err
 	} else {
 		return val, nil
