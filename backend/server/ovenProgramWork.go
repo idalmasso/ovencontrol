@@ -60,7 +60,7 @@ func (s *MachineServer) TryStartTestRamp(temperature, timeMinutes float64) bool 
 
 	stepPoint := ovenprograms.StepPoint{Temperature: temperature, TimeMinutes: timeMinutes}
 	program := ovenprograms.OvenProgram{Name: "TestProgram", Points: []ovenprograms.StepPoint{stepPoint}}
-	s.ovenProgramWorker.StartOvenProgram(program)
+	s.ovenProgramWorker.StartOvenProgram(program, "")
 	return true
 }
 
@@ -72,7 +72,7 @@ func (s *MachineServer) startProgram(w http.ResponseWriter, r *http.Request) {
 	}
 	programName := chi.URLParam(r, "programName")
 	if program, ok := s.ovenProgramManager.Programs()[programName]; ok {
-		s.ovenProgramWorker.StartOvenProgram(program)
+		s.ovenProgramWorker.StartOvenProgram(program, "")
 		w.WriteHeader(http.StatusOK)
 		return
 	} else {

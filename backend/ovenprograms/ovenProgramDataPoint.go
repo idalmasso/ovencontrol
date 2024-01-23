@@ -3,6 +3,7 @@ package ovenprograms
 import (
 	"fmt"
 	"math"
+	"strconv"
 	"time"
 )
 
@@ -32,6 +33,24 @@ func (history ProgramDataPointArray) toStrings() [][]string {
 		res[idx] = s
 	}
 	return res
+}
+
+func programDataPointArrayFromDataStrings(s [][]string) ProgramDataPointArray {
+	programDataPointArray := ProgramDataPointArray(make([]ProgramDataPoint, len(s)))
+	for i := range s {
+		programDataPointArray[i].ProgramName = s[i][0]
+		programDataPointArray[i].SegmentName = s[i][1]
+		v, _ := strconv.ParseFloat(s[i][2], 64)
+		programDataPointArray[i].SecondsFromStart = v
+		programDataPointArray[i].DateTime = s[i][3]
+		v, _ = strconv.ParseFloat(s[i][4], 64)
+		programDataPointArray[i].DesiredTemperature = v
+		v, _ = strconv.ParseFloat(s[i][5], 64)
+		programDataPointArray[i].OvenTemperature = v
+		v, _ = strconv.ParseFloat(s[i][6], 64)
+		programDataPointArray[i].OvenPercentage = v
+	}
+	return programDataPointArray
 }
 func programHistoryHeaders() []string {
 	s := make([]string, 7)

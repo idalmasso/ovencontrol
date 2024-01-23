@@ -6,7 +6,6 @@ require (
 	github.com/go-chi/chi/v5 v5.0.11
 	github.com/go-chi/cors v1.2.1
 	github.com/go-chi/httplog/v2 v2.0.8
-	github.com/golang/glog v1.2.0
 	gobot.io/x/gobot/v2 v2.2.0
 	gopkg.in/yaml.v2 v2.4.0
 )

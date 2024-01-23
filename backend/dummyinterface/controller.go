@@ -17,8 +17,8 @@ type DummyController struct {
 	logger                                                                                *httplog.Logger
 }
 
-func (d DummyController) GetTemperature() float64 {
-	return math.Round(d.ovenTemperature*100) / 100
+func (d DummyController) GetTemperature() (float64, error) {
+	return math.Round(d.ovenTemperature*100) / 100, nil
 }
 
 func (d *DummyController) IsWorking() bool {

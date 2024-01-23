@@ -94,11 +94,11 @@ func (d *OvenProgramWorker) changedStepPoint(s StepPoint) error {
 	defer f.Close()
 
 	encoder := csv.NewWriter(f)
-	err = encoder.Write([]string{d.programName, s.SegmentName})
+	err = encoder.Write([]string{d.programName, s.SegmentName, d.runName})
 	encoder.Flush()
 	return err
 }
-func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram) {
+func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram, runName string) {
 	d.mu.Lock()
 	if d.isWorking {
 		return
@@ -107,7 +107,9 @@ func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram) {
 	d.endRequest = false
 	d.mu.Unlock()
 	d.programName = program.Name
-	d.runName = time.Now().Format("2006-01-02T15-04-05") + "-" + program.Name
+	if runName == "" {
+		d.runName = time.Now().Format("2006-01-02T15-04-05") + "-" + program.Name
+	}
 	d.programHistory = make([]ProgramDataPoint, 0)
 	d.lastPointsToBeWritten = 0
 	d.startedProgram()
@@ -323,31 +325,70 @@ func NewOvenProgramWorker(oven Oven, config config.Config, ovenProgramManager Ov
 			}
 		}
 	}
-	if _, err := os.Stat(filepath.Join(o.SavedRunFolder, "work.txt")); err != nil {
-		if !os.IsNotExist(err) {
-			//maybe we need to restart the program!
-			f, err := os.OpenFile(filepath.Join(o.SavedRunFolder, "work.txt"), os.O_RDONLY, 0644)
-			if err != nil {
-				slog.Debug("Cannot open work file", "err", err)
-				o.endedProgram()
-			}
-			defer f.Close()
-			rec, err := csv.NewReader(f).Read()
-			if err != nil {
-				slog.Debug("Cannot read work file", "err", err)
-				o.endedProgram()
-			}
-			program, ok := ovenProgramManager.Programs()[rec[0]]
-			if !ok {
-				slog.Debug("Cannot find program")
-				o.endedProgram()
-			}
-			newProgram := OvenProgram{Name: program.Name, AirCloseAtDegrees: program.AirCloseAtDegrees}
-			found := false
+	if _, err := os.Stat(filepath.Join(o.SavedRunFolder, "work.txt")); err == nil {
+		//maybe we need to restart the program!
+		f, err := os.OpenFile(filepath.Join(o.SavedRunFolder, "work.txt"), os.O_RDONLY, 0644)
+		if err != nil {
+			slog.Debug("Cannot open work file", "err", err)
+			o.endedProgram()
+			return &o
+		}
+		defer f.Close()
+		rec, err := csv.NewReader(f).Read()
+		if err != nil {
+			slog.Debug("Cannot read work file", "err", err)
+			o.endedProgram()
+			return &o
+		}
+		program, ok := ovenProgramManager.Programs()[rec[0]]
+		if !ok {
+			slog.Debug("Cannot find program")
+			o.endedProgram()
+			return &o
+		}
+		newProgram := OvenProgram{Name: program.Name, AirCloseAtDegrees: program.AirCloseAtDegrees}
 
-			if found {
-				o.StartOvenProgram(newProgram)
+		fjob, err := os.OpenFile(filepath.Join(o.SavedRunFolder, rec[2]+".txt"), os.O_RDONLY, 0644)
+		if err != nil {
+			slog.Debug("Cannot open work file of run", "err", err)
+			o.endedProgram()
+			return &o
+		}
+		defer fjob.Close()
+		reader := csv.NewReader(fjob)
+		history, err := reader.ReadAll()
+		if err != nil {
+			slog.Debug("Cannot read work file of run as csv", "err", err)
+			o.endedProgram()
+			return &o
+		}
+		o.programHistory = programDataPointArrayFromDataStrings(history)
+		found := false
+
+		lastTimeStr := o.programHistory[len(o.programHistory)-1].DateTime
+		lastTime, err := time.Parse("2006-01-02T15:04:05", lastTimeStr)
+		if err != nil {
+			slog.Debug("Cannot read last time", "err", err)
+			o.endedProgram()
+			return &o
+		}
+		lastTemp := 0.0
+
+		for idx, step := range program.Points {
+			if step.SegmentName == rec[1] {
+				if step.RestartFromLastAscendingRamp && time.Since(lastTime).Minutes() <= step.TimeAfterNoRestartMinutes {
+					found = true
+					if step.Temperature > lastTemp {
+						newProgram.Points = program.Points[idx:len(program.Points)]
+					} else {
+						newProgram.Points = program.Points[idx-1 : len(program.Points)]
+					}
+				}
 			}
+			lastTemp = step.Temperature
+		}
+		if found {
+			o.StartOvenProgram(newProgram, rec[2])
 		}
 	}
 
@@ -359,7 +400,7 @@ func (d *OvenProgramWorker) GetAllDataActualWork(step int) ProgramDataPointArray
 		return d.programHistory
 	} else {
 		programHistoryLn := len(d.programHistory)
-		res := make([]ProgramDataPoint, programHistoryLn/10+1)
+		res := make([]ProgramDataPoint, programHistoryLn/step+1)
 
 		for i := 0; i < programHistoryLn; i += step {
 			res[i/step] = d.programHistory[i]
