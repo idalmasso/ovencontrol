@@ -12,9 +12,9 @@ import (
 )
 
 type piController struct {
-	buttonInput *gpio.ButtonDriver
-	//ledOk             *gpio.LedDriver
-	ledPower            *gpio.LedDriver
+	buttonInput         *gpio.ButtonDriver
+	ledOvenWorking      *gpio.LedDriver
+	ledPowerOven        *gpio.LedDriver
 	analogInput         *spi.MAX31856Driver
 	mutex               *sync.RWMutex
 	buttonPressFunc     func()
@@ -44,9 +44,11 @@ func (c *piController) SetPercentual(f float64) {
 }
 func (c *piController) InitStartProgram() {
 	c.logger.Info("Init start program")
+	c.ledOvenWorking.On()
 }
 func (c *piController) EndProgram() {
 	c.logger.Info("End program")
+	c.ledOvenWorking.Off()
 }
 func (d *piController) InitConfig(c config.Config) {
 
@@ -90,10 +92,14 @@ func NewController() *piController {
 	r.Connect()
 
 	buttonInput := gpio.NewButtonDriver(r, "15", time.Duration(10*time.Millisecond))
-	buttonInput.Start()
-	//ledOk := gpio.NewLedDriver(r, "13")
-	//ledOk.Start()
-	//ledOk.On()
+	//buttonInput.Start()
+	//This is showing the server is on, I don't need to pass to the piController
+	ledOk := gpio.NewLedDriver(r, "16")
+	ledOk.Start()
+	ledOk.On()
+	ledOvenWorking := gpio.NewLedDriver(r, "18")
+	ledOvenWorking.Start()
+	ledOvenWorking.Off()
 	ledPower := gpio.NewLedDriver(r, "11")
 	ledPower.Start()
 
@@ -104,7 +110,7 @@ func NewController() *piController {
 
 	analogInput := spi.NewMAX31856Driver(r)
 	analogInput.Start()
-	pi := piController{buttonInput: buttonInput, analogInput: analogInput, ledPower: ledPower}
+	pi := piController{buttonInput: buttonInput, analogInput: analogInput, ledPowerOven: ledPower}
 	buttonInput.On(gpio.ButtonRelease, pi.buttonPressed)
 	return &pi
 }
