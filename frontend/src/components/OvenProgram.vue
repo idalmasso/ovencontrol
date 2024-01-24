@@ -144,7 +144,7 @@ const timerWorking = setInterval(IsWorkingEnabler, 1000);
 console.log(props);
 const programName = props["programName"];
 let url = "http://localhost:3333/api/processes/test-ramp";
-if (programName != "") {
+if (programName != "" && programName!=undefined && programName!=null) {
   url = "http://localhost:3333/api/processes/start-process/" + programName;
 }
 function StartProgram() {

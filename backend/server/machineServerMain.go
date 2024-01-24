@@ -106,6 +106,9 @@ func (s *MachineServer) Init(machine controllerMachine) {
 	s.FileServer(s.Router.(*chi.Mux), s.configuration.Server.DistributionDirectory)
 	s.Router.Route("/api", func(router chi.Router) {
 		router.Route("/processes", func(processRouter chi.Router) {
+			processRouter.Route("/set-power-one-minute", func(r chi.Router) {
+				r.Post("/", s.setPowerOneMinute)
+			})
 			processRouter.Route("/get-temperature", func(r chi.Router) {
 				r.Get("/", s.getTemperature)
 			})

@@ -2,6 +2,7 @@ package ovenprograms
 
 import (
 	"encoding/csv"
+	"fmt"
 	"log/slog"
 	"math"
 	"os"
@@ -101,6 +102,7 @@ func (d *OvenProgramWorker) changedStepPoint(s StepPoint) error {
 func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram, runName string) {
 	d.mu.Lock()
 	if d.isWorking {
+		d.mu.Unlock()
 		return
 	}
 	d.isWorking = true
@@ -115,22 +117,18 @@ func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram, runName string
 	d.startedProgram()
 	go func(program OvenProgram) {
 
-		defer func() {
-			d.mu.Lock()
-			d.isWorking = false
-			d.mu.Unlock()
-		}()
-
 		d.timeSeconds = 0
 		if len(program.Points) == 0 {
 			return
 		}
-
-		d.oven.InitStartProgram()
-		d.writeHeader()
 		defer func() {
+			d.mu.Lock()
+			d.isWorking = false
+			d.mu.Unlock()
 			d.endedProgram()
 		}()
+		d.oven.InitStartProgram()
+		d.writeHeader()
 		firstPoint := program.Points[0]
 		d.changedStepPoint(firstPoint)
 		temperature, err := d.oven.GetTemperature()
@@ -283,7 +281,29 @@ func (d *OvenProgramWorker) maintainTemperature(s StepPoint) error {
 	d.Save()
 	return nil
 }
+func (d *OvenProgramWorker) SetPowerOneMinute(pwr float64) error {
+	d.mu.Lock()
+	if d.isWorking {
+		d.mu.Unlock()
+		return fmt.Errorf("cannot set power if working")
+	}
+	d.isWorking = true
+	d.mu.Unlock()
+	go func(pwr float64) {
+		d.oven.InitStartProgram()
+		defer func() {
+			d.oven.SetPercentual(0)
+			d.oven.EndProgram()
+			d.mu.Lock()
+			d.isWorking = false
+			d.mu.Unlock()
+		}()
+		d.oven.SetPercentual(pwr)
+		time.Sleep(time.Minute)
 
+	}(pwr)
+	return nil
+}
 func (d *OvenProgramWorker) Save() error {
 	f, err := os.OpenFile(filepath.Join(d.SavedRunFolder, d.runName+".txt"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {

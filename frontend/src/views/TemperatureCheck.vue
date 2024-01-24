@@ -3,7 +3,7 @@
     <v-row
       ><v-btn color="blue" @click="$router.push({ name: 'ListTests' })"
         >Indietro</v-btn
-      ></v-row
+      ><v-btn color="red"  v-if="!isWorking" @click="powerOvenOneMinute">Power one min</v-btn></v-row
     >
     <v-row justify="center" style="height: 200px ">
       <Scatter :data="chartData" :options="chartOptions" ref="chart" width="500px" />
@@ -18,6 +18,7 @@
         </v-card-text>
       </v-card>
     </v-row>
+   
   </v-container>
 </template>
 
@@ -35,6 +36,7 @@ import {
 } from "chart.js";
 ChartJS.register(LinearScale, PointElement, LineElement, Tooltip, Legend);
 const temp = ref(0);
+const isWorking = ref(false);
 var temperatureData = [];
 var i = 0;
 const chart = ref(null);
@@ -51,13 +53,35 @@ const getTemp = () => {
           chart.value.chart.update();
         }
         i++;
-        if (temperatureData.length > 10) {
+        if (temperatureData.length > 600) {
           temperatureData.shift();
         }
       });
     }
   });
 };
+
+function IsWorkingEnabler() {
+  return fetch("http://localhost:3333/api/processes/is-working").then(
+    async (a) => {
+      if (a.ok) {
+        await a.json().then((t) => {
+          isWorking.value = t["is-working"];
+        });
+      }
+    }
+  );
+};
+const timerWorking = setInterval(IsWorkingEnabler, 1000);
+const powerOvenOneMinute = ()=>{
+  fetch("http://localhost:3333/api/processes/set-power-one-minute",{method:"POST", body:""}).then((a) => {
+    if (!a.ok) {
+      a.json().then(data=>{
+        alert(data.error)
+      })
+    }
+  })
+}
 const timer = setInterval(getTemp, 1000);
 const chartOptions = reactive({
   responsive: true,
@@ -85,6 +109,6 @@ const chartData = computed(() => {
     ],
   };
 });
-onBeforeUnmount(() => clearInterval(timer));
+onBeforeUnmount(() => {clearInterval(timer);clearInterval(timerWorking)});
 //
 </script>

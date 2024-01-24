@@ -49,14 +49,14 @@ func (s *MachineServer) stopProgram(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *MachineServer) testRamp(w http.ResponseWriter, r *http.Request) {
-	if ok := s.TryStartTestRamp(s.configuration.Server.TestRampTemperature, s.configuration.Server.TestRampTimeMinutes); !ok {
+	if ok := s.tryStartTestRamp(s.configuration.Server.TestRampTemperature, s.configuration.Server.TestRampTimeMinutes); !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(struct{ Error string }{Error: "Machine is working"})
 	} else {
 		w.WriteHeader(http.StatusOK)
 	}
 }
-func (s *MachineServer) TryStartTestRamp(temperature, timeMinutes float64) bool {
+func (s *MachineServer) tryStartTestRamp(temperature, timeMinutes float64) bool {
 
 	stepPoint := ovenprograms.StepPoint{Temperature: temperature, TimeMinutes: timeMinutes}
 	program := ovenprograms.OvenProgram{Name: "TestProgram", Points: []ovenprograms.StepPoint{stepPoint}}
@@ -64,6 +64,15 @@ func (s *MachineServer) TryStartTestRamp(temperature, timeMinutes float64) bool 
 	return true
 }
 
+func (s *MachineServer) setPowerOneMinute(w http.ResponseWriter, r *http.Request) {
+
+	if err := s.ovenProgramWorker.SetPowerOneMinute(70); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(struct{ Error string }{Error: err.Error()})
+	} else {
+		w.WriteHeader(http.StatusOK)
+	}
+}
 func (s *MachineServer) startProgram(w http.ResponseWriter, r *http.Request) {
 	if s.ovenProgramWorker.IsWorking() {
 		w.WriteHeader(http.StatusBadRequest)

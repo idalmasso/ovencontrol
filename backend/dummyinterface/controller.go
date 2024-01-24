@@ -39,6 +39,16 @@ func (d *DummyController) InitConfig(c config.Config) {
 	d.thermalConductivity = calculateConducibility(c.Oven.InsultationWidths, c.Oven.ThermalConductivities)
 	d.timeMultiplier = 10
 	d.weight = c.Oven.Weight
+
+	go func() {
+		for {
+			time.Sleep(time.Millisecond * 500)
+			ovenPower := d.actualPercentual * d.maxPower
+			lostPower := (d.thermalConductivity * d.internalArea *
+				(d.ovenTemperature - d.externalTemperature)) / d.insulationWidth
+			d.ovenTemperature += ((ovenPower - lostPower) / (d.weight * d.thermalCapacity)) * 0.5
+		}
+	}()
 }
 
 func calculateConducibility(lengths, conducibilities []float64) float64 {
@@ -68,19 +78,7 @@ func (d *DummyController) SetLogger(logger *httplog.Logger) {
 	d.logger = logger
 }
 func (d *DummyController) InitStartProgram() {
-	if !d.isWorking {
-		d.ovenTemperature = 0
-		go func() {
-			d.isWorking = true
-			for d.isWorking {
-				time.Sleep(time.Millisecond * 500)
-				ovenPower := d.actualPercentual * d.maxPower
-				lostPower := (d.thermalConductivity * d.internalArea *
-					(d.ovenTemperature - d.externalTemperature)) / d.insulationWidth
-				d.ovenTemperature += ((ovenPower - lostPower) / (d.weight * d.thermalCapacity)) * 0.5
-			}
-		}()
-	}
+	d.ovenTemperature = 0
 }
 func (d *DummyController) EndProgram() {
 	d.isWorking = false
