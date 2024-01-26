@@ -3,7 +3,12 @@
     <v-row
       ><v-btn color="blue" @click="$router.push({ name: 'ListTests' })"
         >Indietro</v-btn
-      ><v-btn color="red"  v-if="!isWorking" @click="powerOvenOneMinute">Power one min</v-btn></v-row
+      >
+      <v-text-field  v-if="!isWorking"  label="Power % (0-1)" 
+            v-model="power"
+            type="number">
+        </v-text-field>
+      <v-btn color="red"  v-if="!isWorking" @click="powerOvenOneMinute">Power one min</v-btn></v-row
     >
     <v-row justify="center" style="height: 200px ">
       <Scatter :data="chartData" :options="chartOptions" ref="chart" width="500px" />
@@ -40,6 +45,7 @@ const isWorking = ref(false);
 var temperatureData = [];
 var i = 0;
 const chart = ref(null);
+const power = ref(0.0)
 const getTemp = () => {
   fetch("http://localhost:3333/api/processes/get-temperature").then((a) => {
     if (a.ok) {
@@ -74,7 +80,7 @@ function IsWorkingEnabler() {
 };
 const timerWorking = setInterval(IsWorkingEnabler, 1000);
 const powerOvenOneMinute = ()=>{
-  fetch("http://localhost:3333/api/processes/set-power-one-minute",{method:"POST", body:""}).then((a) => {
+  fetch("http://localhost:3333/api/processes/set-power-one-minute",{method:"POST", body:JSON.stringify({'power':power.value})}).then((a) => {
     if (!a.ok) {
       a.json().then(data=>{
         alert(data.error)

@@ -65,8 +65,22 @@ func (s *MachineServer) tryStartTestRamp(temperature, timeMinutes float64) bool 
 }
 
 func (s *MachineServer) setPowerOneMinute(w http.ResponseWriter, r *http.Request) {
-
-	if err := s.ovenProgramWorker.SetPowerOneMinute(70); err != nil {
+	var power struct {
+		Power float64 `json:"power,string"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&power)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(struct{ Error string }{Error: err.Error()})
+		return
+	}
+	if power.Power > 1 {
+		power.Power = 1
+	}
+	if power.Power < 0 {
+		power.Power = 0
+	}
+	if err := s.ovenProgramWorker.SetPowerOneMinute(power.Power); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(struct{ Error string }{Error: err.Error()})
 	} else {
