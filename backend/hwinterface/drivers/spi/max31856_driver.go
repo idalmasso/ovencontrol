@@ -95,7 +95,7 @@ const (
 //	 spi.WithMode(int):    	 mode to use with this driver
 //	 spi.WithBitCount(int):   number of bits to use with this driver
 //	 spi.WithSpeed(int64):    speed in Hz to use with this driver
-func NewMAX31856Driver(a spi.Connector, options ...func(spi.Config)) *MAX31856Driver {
+func NewMAX31856Driver(a spi.Connector, options ...func(*MAX31856Driver)) *MAX31856Driver {
 	d := &MAX31856Driver{
 		Driver:           NewDriver(a, "MAX31856", spi.WithMode(1)),
 		thermocoupleType: S,
@@ -118,6 +118,11 @@ func NewMAX31856Driver(a spi.Connector, options ...func(spi.Config)) *MAX31856Dr
 	}
 
 	return d
+}
+func WithLogger(logger Logger) func(*MAX31856Driver) {
+	return func(driver *MAX31856Driver) {
+		driver.logger = logger
+	}
 }
 
 // SetAverageSample sets the number of samples averaged per read

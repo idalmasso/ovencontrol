@@ -1,24 +1,21 @@
 package hwinterface
 
 import (
-	"log/slog"
-	"sync"
-	"time"
+	"encoding/binary"
 
 	"github.com/idalmasso/ovencontrol/backend/config"
+	"github.com/idalmasso/ovencontrol/backend/hwinterface/drivers"
 	"github.com/idalmasso/ovencontrol/backend/hwinterface/drivers/spi"
 	"gobot.io/x/gobot/v2/drivers/gpio"
 	"gobot.io/x/gobot/v2/platforms/raspi"
 )
 
 type piController struct {
-	buttonInput         *gpio.ButtonDriver
+	//buttonInput         *gpio.ButtonDriver
 	ledOvenWorking      *gpio.LedDriver
-	ledPowerOven        *gpio.LedDriver
+	ssrPowerController  *drivers.SSRRegulatorDriver
 	analogInput         *spi.MAX31856Driver
-	mutex               *sync.RWMutex
 	buttonPressFunc     func()
-	actualProcessName   string
 	actualPercentual    float64
 	maxPower            float64
 	internalArea        float64
@@ -41,6 +38,9 @@ func (c *piController) GetMaxPower() float64 {
 }
 func (c *piController) SetPercentual(f float64) {
 	c.actualPercentual = f
+	var b [8]byte
+	binary.LittleEndian.PutUint64(b[:], uint64(f*255))
+	c.ssrPowerController.SetPower(b[0])
 }
 func (c *piController) InitStartProgram() {
 	c.logger.Info("Init start program")
@@ -67,6 +67,12 @@ func (d *piController) SetLogger(logger Logger) {
 	d.logger = logger
 	d.analogInput.SetLogger(logger)
 }
+
+func WithLogger(logger Logger) func(*piController) {
+	return func(pc *piController) {
+		pc.SetLogger(logger)
+	}
+}
 func calculateConducibility(lengths, conducibilities []float64) float64 {
 	total := 0.0
 	for _, l := range lengths {
@@ -87,30 +93,31 @@ func (c *piController) SetOnButtonPress(callback func()) {
 func (c *piController) buttonPressed(interface{}) {
 	c.buttonPressFunc()
 }
-func NewController() *piController {
+func NewController(options ...func(*piController)) *piController {
 	r := raspi.NewAdaptor()
 	r.Connect()
 
-	buttonInput := gpio.NewButtonDriver(r, "15", time.Duration(10*time.Millisecond))
+	//buttonInput := gpio.NewButtonDriver(r, "15", time.Duration(10*time.Millisecond))
 	//buttonInput.Start()
 	//This is showing the server is on, I don't need to pass to the piController
 	ledOk := gpio.NewLedDriver(r, "16")
 	ledOk.Start()
-	ledOk.On()
+
 	ledOvenWorking := gpio.NewLedDriver(r, "18")
 	ledOvenWorking.Start()
-	ledOvenWorking.Off()
-	ledPower := gpio.NewLedDriver(r, "11")
-	ledPower.Start()
 
-	err := ledPower.Brightness(0)
-	if err != nil {
-		slog.Error("setLedPowerBrigthness", "error", err)
-	}
+	ssrRegulator := drivers.NewSSRRegulator(r, "11")
+	ssrRegulator.Start()
 
 	analogInput := spi.NewMAX31856Driver(r)
 	analogInput.Start()
-	pi := piController{buttonInput: buttonInput, analogInput: analogInput, ledPowerOven: ledPower}
-	buttonInput.On(gpio.ButtonRelease, pi.buttonPressed)
-	return &pi
+	pi := &piController{analogInput: analogInput, ssrPowerController: ssrRegulator}
+	for _, o := range options {
+		o(pi)
+	}
+	ledOk.On()
+	ledOvenWorking.Off()
+	pi.ssrPowerController.SetPower(0)
+	//buttonInput.On(gpio.ButtonRelease, pi.buttonPressed)
+	return pi
 }
