@@ -3,6 +3,7 @@ package hwinterface
 import (
 	"encoding/binary"
 
+	"github.com/idalmasso/ovencontrol/backend/commoninterface"
 	"github.com/idalmasso/ovencontrol/backend/config"
 	"github.com/idalmasso/ovencontrol/backend/hwinterface/drivers"
 	"github.com/idalmasso/ovencontrol/backend/hwinterface/drivers/spi"
@@ -23,11 +24,7 @@ type piController struct {
 	thermalConductivity float64
 	weight              float64
 	insulationWidth     float64
-	logger              Logger
-}
-type Logger interface {
-	Info(msc string, args ...any)
-	spi.Logger
+	logger              commoninterface.Logger
 }
 
 func (c *piController) GetPercentual() float64 {
@@ -63,12 +60,12 @@ func (d *piController) InitConfig(c config.Config) {
 	d.weight = c.Oven.Weight
 }
 
-func (d *piController) SetLogger(logger Logger) {
+func (d *piController) SetLogger(logger commoninterface.Logger) {
 	d.logger = logger
 	d.analogInput.SetLogger(logger)
 }
 
-func WithLogger(logger Logger) func(*piController) {
+func WithLogger(logger commoninterface.Logger) func(*piController) {
 	return func(pc *piController) {
 		pc.SetLogger(logger)
 	}

@@ -1,7 +1,6 @@
 package server
 
 import (
-	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -20,7 +19,6 @@ type controllerMachine interface {
 	temperatureReader
 	ovenprograms.Oven
 	InitConfig(c config.Config)
-	SetLogger(logger *httplog.Logger)
 }
 
 // PiServer
@@ -47,26 +45,9 @@ func (s *MachineServer) ListenAndServe() {
 }
 
 // Init initialize the server router and set the controllerMachine needed to do the work
-func (s *MachineServer) Init(machine controllerMachine) {
+func (s *MachineServer) Init(machine controllerMachine, logger *httplog.Logger) {
 	// Logger
-
-	s.logger = httplog.NewLogger("oven-logger", httplog.Options{
-		// JSON:             true,
-		LogLevel:         slog.LevelDebug,
-		Concise:          true,
-		RequestHeaders:   true,
-		MessageFieldName: "message",
-		// TimeFieldFormat: time.RFC850,
-		Tags: map[string]string{
-			"env": "dev",
-		},
-		QuietDownRoutes: []string{
-			"/ping",
-		},
-		QuietDownPeriod: 10 * time.Second,
-		// SourceFieldName: "source",
-	})
-
+	s.logger = logger
 	s.configuration = &config.Config{}
 	if err := s.configuration.ReadFromFile("configuration.yaml"); err != nil {
 		s.logger.Error("Error", "error", err)
@@ -172,4 +153,12 @@ func (s MachineServer) FileServer(router *chi.Mux, root string) {
 			fs.ServeHTTP(w, r)
 		}
 	})
+}
+
+func NewMachineServer(options ...func(*MachineServer)) *MachineServer {
+	machineServer := &MachineServer{}
+	for _, o := range options {
+		o(machineServer)
+	}
+	return machineServer
 }

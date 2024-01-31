@@ -4,7 +4,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/go-chi/httplog/v2"
+	"github.com/idalmasso/ovencontrol/backend/commoninterface"
 	"github.com/idalmasso/ovencontrol/backend/config"
 )
 
@@ -14,7 +14,7 @@ type DummyController struct {
 	actualPercentual                                                                      float64
 	timeMultiplier                                                                        float64
 	isWorking                                                                             bool
-	logger                                                                                *httplog.Logger
+	logger                                                                                commoninterface.Logger
 }
 
 func (d DummyController) GetTemperature() (float64, error) {
@@ -74,12 +74,25 @@ func (d *DummyController) GetMaxPower() float64 {
 func (d *DummyController) SetPercentual(percent float64) {
 	d.actualPercentual = percent
 }
-func (d *DummyController) SetLogger(logger *httplog.Logger) {
+func (d *DummyController) SetLogger(logger commoninterface.Logger) {
 	d.logger = logger
+}
+func WithLogger(logger commoninterface.Logger) func(*DummyController) {
+	return func(d *DummyController) {
+		d.SetLogger(logger)
+	}
 }
 func (d *DummyController) InitStartProgram() {
 	d.ovenTemperature = 0
 }
 func (d *DummyController) EndProgram() {
 	d.isWorking = false
+}
+
+func NewDummyController(options ...func(*DummyController)) *DummyController {
+	d := &DummyController{}
+	for _, o := range options {
+		o(d)
+	}
+	return d
 }

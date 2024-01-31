@@ -2,9 +2,11 @@ package spi
 
 import (
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
+	"github.com/idalmasso/ovencontrol/backend/commoninterface"
 	"gobot.io/x/gobot/v2/drivers/spi"
 )
 
@@ -13,18 +15,14 @@ type MAX31856Driver struct {
 	*Driver
 	thermocoupleType ThermocoupleType
 	mu               *sync.Mutex
-	logger           Logger
+	logger           commoninterface.Logger
 }
 
 type FaultState struct {
 	Highthresh, Lowthresh, Refinlow, Refinhigh, Rtdinlow, Ovuv bool
 }
-type Logger interface {
-	Debug(msg string, args ...any)
-	Error(msg string, args ...any)
-}
 
-func (d *MAX31856Driver) SetLogger(logger Logger) {
+func (d *MAX31856Driver) SetLogger(logger commoninterface.Logger) {
 	d.logger = logger
 }
 
@@ -100,12 +98,14 @@ func NewMAX31856Driver(a spi.Connector, options ...func(*MAX31856Driver)) *MAX31
 		Driver:           NewDriver(a, "MAX31856", spi.WithMode(1)),
 		thermocoupleType: S,
 		mu:               &sync.Mutex{},
+		logger:           slog.Default(),
 	}
 
 	for _, option := range options {
 		option(d)
 	}
 	d.afterStart = func() error {
+
 		d.logger.Debug("after start")
 		//# assert on any fault
 		d.writeUint8(MAX31856_MASK_REG, 0x0)
@@ -119,9 +119,9 @@ func NewMAX31856Driver(a spi.Connector, options ...func(*MAX31856Driver)) *MAX31
 
 	return d
 }
-func WithLogger(logger Logger) func(*MAX31856Driver) {
+func WithLogger(logger commoninterface.Logger) func(*MAX31856Driver) {
 	return func(driver *MAX31856Driver) {
-		driver.logger = logger
+		driver.SetLogger(logger)
 	}
 }
 
