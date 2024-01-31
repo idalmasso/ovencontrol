@@ -33,6 +33,21 @@ const routes = [
     ],
   },
   {
+    path: "/power-off",
+    component: () => import("@/layouts/default/DefaultLayout.vue"),
+    children: [
+      {
+        path: "",
+        name: "PowerOff",
+        // route level code-splitting
+        // this generates a separate chunk (Home-[hash].js) for this route
+        // which is lazy-loaded when the route is visited.
+        component: () => import("@/views/PowerOff.vue"),
+        meta: { title: "Spegnimento" },
+      },
+    ],
+  },
+  {
     path: "/oven-run/:programName",
     component: () => import("@/layouts/default/DefaultLayout.vue"),
     children: [

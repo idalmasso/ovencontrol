@@ -26,6 +26,12 @@ const listItems = ref([
     icon: "mdi-cog",
     name: "ListConfigurations",
   },
+  {
+    title: "Spegni",
+    icon: "mdi-power",
+    name: "PowerOff"
+  }
+
 ]);
 function buttonClickedHandler(name) {
   router.push({ name: name });

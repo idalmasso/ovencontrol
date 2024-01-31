@@ -1,8 +1,10 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -86,6 +88,9 @@ func (s *MachineServer) Init(machine controllerMachine, logger *httplog.Logger) 
 
 	s.FileServer(s.Router.(*chi.Mux), s.configuration.Server.DistributionDirectory)
 	s.Router.Route("/api", func(router chi.Router) {
+		router.Route("/power-off", func(router chi.Router) {
+			router.Post("/", s.powerOff)
+		})
 		router.Route("/processes", func(processRouter chi.Router) {
 			processRouter.Route("/set-power-one-minute", func(r chi.Router) {
 				r.Post("/", s.setPowerOneMinute)
@@ -161,4 +166,17 @@ func NewMachineServer(options ...func(*MachineServer)) *MachineServer {
 		o(machineServer)
 	}
 	return machineServer
+}
+
+func (s *MachineServer) powerOff(w http.ResponseWriter, r *http.Request) {
+	if s.ovenProgramWorker.IsWorking() {
+		s.ovenProgramWorker.RequestStopProgram()
+		time.Sleep(time.Second)
+	}
+	err := exec.Command("shutdown", "-h", "now").Run()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(struct{ Error string }{Error: err.Error()})
+	}
+
 }
