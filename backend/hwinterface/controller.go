@@ -1,8 +1,8 @@
 package hwinterface
 
 import (
+	"encoding/binary"
 	"log/slog"
-	"sync"
 	"time"
 
 	"github.com/idalmasso/ovencontrol/backend/config"
@@ -16,9 +16,7 @@ type piController struct {
 	ledOvenWorking      *gpio.LedDriver
 	ledPowerOven        *gpio.LedDriver
 	analogInput         *spi.MAX31856Driver
-	mutex               *sync.RWMutex
 	buttonPressFunc     func()
-	actualProcessName   string
 	actualPercentual    float64
 	maxPower            float64
 	internalArea        float64
@@ -41,6 +39,9 @@ func (c *piController) GetMaxPower() float64 {
 }
 func (c *piController) SetPercentual(f float64) {
 	c.actualPercentual = f
+	var b [8]byte
+	binary.LittleEndian.PutUint64(b[:], uint64(f*255))
+	c.ledPowerOven.Brightness(b[0])
 }
 func (c *piController) InitStartProgram() {
 	c.logger.Info("Init start program")
