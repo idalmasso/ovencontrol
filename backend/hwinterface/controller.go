@@ -12,10 +12,11 @@ import (
 )
 
 type piController struct {
-	//buttonInput         *gpio.ButtonDriver
-	ledOvenWorking      *gpio.LedDriver
-	ssrPowerController  *drivers.SSRRegulatorDriver
-	analogInput         *spi.MAX31856Driver
+	ledOvenWorking     *gpio.LedDriver
+	ssrPowerController *drivers.SSRRegulatorDriver
+	analogInput        *spi.MAX31856Driver
+	ovenRelayPower     *gpio.RelayDriver
+	gpio.RelayDriver
 	buttonPressFunc     func()
 	actualPercentual    float64
 	maxPower            float64
@@ -42,10 +43,12 @@ func (c *piController) SetPercentual(f float64) {
 func (c *piController) InitStartProgram() {
 	c.logger.Info("Init start program")
 	c.ledOvenWorking.On()
+	c.ovenRelayPower.On()
 }
 func (c *piController) EndProgram() {
 	c.logger.Info("End program")
 	c.ledOvenWorking.Off()
+	c.ovenRelayPower.Off()
 }
 func (d *piController) InitConfig(c config.Config) {
 
@@ -84,37 +87,29 @@ func calculateConducibility(lengths, conducibilities []float64) float64 {
 	return total / rTot
 }
 
-func (c *piController) SetOnButtonPress(callback func()) {
-	c.buttonPressFunc = callback
-}
-func (c *piController) buttonPressed(interface{}) {
-	c.buttonPressFunc()
-}
 func NewController(options ...func(*piController)) *piController {
 	r := raspi.NewAdaptor()
 	r.Connect()
 
-	//buttonInput := gpio.NewButtonDriver(r, "15", time.Duration(10*time.Millisecond))
-	//buttonInput.Start()
 	//This is showing the server is on, I don't need to pass to the piController
 	ledOk := gpio.NewLedDriver(r, "16")
 	ledOk.Start()
-
+	ledOk.On()
+	ovenRelayPower := gpio.NewRelayDriver(r, "13")
 	ledOvenWorking := gpio.NewLedDriver(r, "18")
-	ledOvenWorking.Start()
-
 	ssrRegulator := drivers.NewSSRRegulator(r, "11")
-	ssrRegulator.Start()
+	analogInput := spi.NewMAX31856Driver(r, spi.WithAverageSample(4), spi.WithNoiseRejection(50), spi.WithThermocoupleType(spi.S))
 
-	analogInput := spi.NewMAX31856Driver(r)
-	analogInput.Start()
-	pi := &piController{analogInput: analogInput, ssrPowerController: ssrRegulator}
+	pi := &piController{analogInput: analogInput, ssrPowerController: ssrRegulator, ledOvenWorking: ledOvenWorking, ovenRelayPower: ovenRelayPower}
 	for _, o := range options {
 		o(pi)
 	}
-	ledOk.On()
+	analogInput.Start()
+	ledOvenWorking.Start()
+	ssrRegulator.Start()
+	ovenRelayPower.Start()
+	ovenRelayPower.Off()
 	ledOvenWorking.Off()
 	pi.ssrPowerController.SetPower(0)
-	//buttonInput.On(gpio.ButtonRelease, pi.buttonPressed)
 	return pi
 }
