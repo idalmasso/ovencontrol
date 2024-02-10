@@ -95,9 +95,9 @@ func NewController(options ...func(*piController)) *piController {
 	ledOk := gpio.NewLedDriver(r, "16")
 	ledOk.Start()
 	ledOk.On()
-	ovenRelayPower := gpio.NewRelayDriver(r, "13")
+	ovenRelayPower := gpio.NewRelayDriver(r, "36")
 	ledOvenWorking := gpio.NewLedDriver(r, "18")
-	ssrRegulator := drivers.NewSSRRegulator(r, "11")
+	ssrRegulator := drivers.NewSSRRegulator(r, "37")
 	analogInput := spi.NewMAX31856Driver(r, spi.WithAverageSample(4), spi.WithNoiseRejection(50), spi.WithThermocoupleType(spi.S))
 
 	pi := &piController{analogInput: analogInput, ssrPowerController: ssrRegulator, ledOvenWorking: ledOvenWorking, ovenRelayPower: ovenRelayPower}
