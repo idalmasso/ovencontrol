@@ -9,8 +9,9 @@
 import { ref, defineEmits } from "vue";
 import ListPageWithButtons from "./parts/ListPageWithButtons.vue";
 import { onMounted } from "vue";
+import { useAppStore } from "@/store/app";
 const emit = defineEmits({ programSelected: String });
-
+const store = useAppStore();
 const getPrograms = () => {
   fetch("http://localhost:3333/api/configuration/programs").then((response) => {
     if (response.ok) {
@@ -24,6 +25,8 @@ const getPrograms = () => {
           };
         });
       });
+    } else {
+      response.json().then((data) => store.setAPIError(data["Error"]));
     }
   });
 };

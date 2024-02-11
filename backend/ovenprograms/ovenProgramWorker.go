@@ -3,13 +3,13 @@ package ovenprograms
 import (
 	"encoding/csv"
 	"fmt"
-	"log/slog"
 	"math"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
+	"github.com/idalmasso/ovencontrol/backend/commoninterface"
 	"github.com/idalmasso/ovencontrol/backend/config"
 )
 
@@ -17,9 +17,9 @@ type Oven interface {
 	GetTemperature() (float64, error)
 	GetPercentual() float64
 	GetMaxPower() float64
-	SetPercentual(float64)
-	InitStartProgram()
-	EndProgram()
+	SetPercentual(float64) error
+	InitStartProgram() error
+	EndProgram() error
 }
 
 type OvenProgramWorker struct {
@@ -38,6 +38,7 @@ type OvenProgramWorker struct {
 	endRequest                         bool
 	programHistory                     ProgramDataPointArray
 	lastPointsToBeWritten              int
+	logger                             commoninterface.Logger
 }
 
 func (d OvenProgramWorker) GetRunningProgram() string {
@@ -81,6 +82,9 @@ func (d *OvenProgramWorker) startedProgram() error {
 }
 
 func (d *OvenProgramWorker) endedProgram() {
+	if d.logger != nil {
+		d.logger.Info("OvenProgramWorker: endedProgram")
+	}
 	d.Save()
 	d.programName = ""
 	os.Remove(filepath.Join(d.SavedRunFolder, "work.txt"))
@@ -100,6 +104,9 @@ func (d *OvenProgramWorker) changedStepPoint(s StepPoint) error {
 	return err
 }
 func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram, runName string) {
+	if d.logger != nil {
+		d.logger.Info("OvenProgramWorker: StartProgram", "program", program.Name)
+	}
 	d.mu.Lock()
 	if d.isWorking {
 		d.mu.Unlock()
@@ -127,7 +134,9 @@ func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram, runName string
 			d.mu.Unlock()
 			d.endedProgram()
 		}()
-		d.oven.InitStartProgram()
+		if err := d.oven.InitStartProgram(); err != nil {
+			return
+		}
 		d.writeHeader()
 		firstPoint := program.Points[0]
 		d.changedStepPoint(firstPoint)
@@ -170,6 +179,9 @@ func (d *OvenProgramWorker) doRamp(s StepPoint, isUpRamp bool) error {
 
 	d.TargetTemperature, err = d.oven.GetTemperature()
 	if err != nil {
+		if d.logger != nil {
+			d.logger.Error("OvenProgramWorker: doRamp", "error", err.Error())
+		}
 		return err
 	}
 	integral, previousError, derivative, temperatureVariance := 0.0, 0.0, 0.0, 0.0
@@ -193,6 +205,9 @@ func (d *OvenProgramWorker) doRamp(s StepPoint, isUpRamp bool) error {
 		timeSave += step
 		newTemperature, err = d.oven.GetTemperature()
 		if err != nil {
+			if d.logger != nil {
+				d.logger.Error("OvenProgramWorker: doRamp", "error", err.Error())
+			}
 			return err
 		}
 		temperatureVariance = newTemperature - ovenTemperature
@@ -228,6 +243,9 @@ func (d *OvenProgramWorker) maintainTemperature(s StepPoint) error {
 	var err error
 	d.TargetTemperature, err = d.oven.GetTemperature()
 	if err != nil {
+		if d.logger != nil {
+			d.logger.Error("OvenProgramWorker: maintainTemperature", "error", err.Error())
+		}
 		return err
 	}
 	integral, previousError, derivative := 0.0, 0.0, 0.0
@@ -254,6 +272,9 @@ func (d *OvenProgramWorker) maintainTemperature(s StepPoint) error {
 		timeSave += step
 		ovenTemperature, err = d.oven.GetTemperature()
 		if err != nil {
+			if d.logger != nil {
+				d.logger.Error("OvenProgramWorker: maintainTemperature readTemperature", "error", err.Error())
+			}
 			return err
 		}
 		errorValue := s.Temperature - ovenTemperature
@@ -328,7 +349,7 @@ func (d *OvenProgramWorker) writeHeader() error {
 	return err
 }
 
-func NewOvenProgramWorker(oven Oven, config config.Config, ovenProgramManager OvenProgramManager) *OvenProgramWorker {
+func NewOvenProgramWorker(oven Oven, config config.Config, ovenProgramManager OvenProgramManager, logger commoninterface.Logger) *OvenProgramWorker {
 	o := OvenProgramWorker{oven: oven}
 	o.mu = &sync.RWMutex{}
 	o.isWorking = false
@@ -341,6 +362,7 @@ func NewOvenProgramWorker(oven Oven, config config.Config, ovenProgramManager Ov
 	o.kiRamp = config.Controller.KiRamp
 	o.kpRamp = config.Controller.KpRamp
 	o.SavedRunFolder = config.Controller.SavedRunFolder
+	o.logger = logger
 	if _, err := os.Stat(o.SavedRunFolder); err != nil {
 		if os.IsNotExist(err) {
 			if err := os.Mkdir(o.SavedRunFolder, os.ModePerm); err != nil {
@@ -352,20 +374,26 @@ func NewOvenProgramWorker(oven Oven, config config.Config, ovenProgramManager Ov
 		//maybe we need to restart the program!
 		f, err := os.OpenFile(filepath.Join(o.SavedRunFolder, "work.txt"), os.O_RDONLY, 0644)
 		if err != nil {
-			slog.Debug("Cannot open work file", "err", err)
+			if logger != nil {
+				logger.Error("NewOvenWorker: Cannot open work file", "err", err)
+			}
 			o.endedProgram()
 			return &o
 		}
 		defer f.Close()
 		rec, err := csv.NewReader(f).Read()
 		if err != nil {
-			slog.Debug("Cannot read work file", "err", err)
+			if logger != nil {
+				logger.Error("NewOvenWorker: Cannot read work file", "err", err)
+			}
 			o.endedProgram()
 			return &o
 		}
 		program, ok := ovenProgramManager.Programs()[rec[0]]
 		if !ok {
-			slog.Debug("Cannot find program")
+			if logger != nil {
+				logger.Error("NewOvenWorker: Cannot find program work file")
+			}
 			o.endedProgram()
 			return &o
 		}
@@ -373,7 +401,9 @@ func NewOvenProgramWorker(oven Oven, config config.Config, ovenProgramManager Ov
 
 		fjob, err := os.OpenFile(filepath.Join(o.SavedRunFolder, rec[2]+".txt"), os.O_RDONLY, 0644)
 		if err != nil {
-			slog.Debug("Cannot open work file of run", "err", err)
+			if logger != nil {
+				logger.Error("NewOvenWorker: Cannot open run file", "err", err)
+			}
 			o.endedProgram()
 			return &o
 		}
@@ -381,7 +411,9 @@ func NewOvenProgramWorker(oven Oven, config config.Config, ovenProgramManager Ov
 		reader := csv.NewReader(fjob)
 		history, err := reader.ReadAll()
 		if err != nil {
-			slog.Debug("Cannot read work file of run as csv", "err", err)
+			if logger != nil {
+				logger.Error("NewOvenWorker: Cannot open run file as csv", "err", err)
+			}
 			o.endedProgram()
 			return &o
 		}
@@ -391,7 +423,9 @@ func NewOvenProgramWorker(oven Oven, config config.Config, ovenProgramManager Ov
 		lastTimeStr := o.programHistory[len(o.programHistory)-1].DateTime
 		lastTime, err := time.Parse("2006-01-02T15:04:05", lastTimeStr)
 		if err != nil {
-			slog.Debug("Cannot read last time", "err", err)
+			if logger != nil {
+				logger.Error("NewOvenWorker: Cannot read last time", "err", err)
+			}
 			o.endedProgram()
 			return &o
 		}

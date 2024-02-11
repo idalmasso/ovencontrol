@@ -1,8 +1,6 @@
 package hwinterface
 
 import (
-	"encoding/binary"
-
 	"github.com/idalmasso/ovencontrol/backend/commoninterface"
 	"github.com/idalmasso/ovencontrol/backend/config"
 	"github.com/idalmasso/ovencontrol/backend/hwinterface/drivers"
@@ -28,28 +26,6 @@ type piController struct {
 	logger              commoninterface.Logger
 }
 
-func (c *piController) GetPercentual() float64 {
-	return c.actualPercentual
-}
-func (c *piController) GetMaxPower() float64 {
-	return c.maxPower
-}
-func (c *piController) SetPercentual(f float64) {
-	c.actualPercentual = f
-	var b [8]byte
-	binary.LittleEndian.PutUint64(b[:], uint64(f*255))
-	c.ssrPowerController.SetPower(b[0])
-}
-func (c *piController) InitStartProgram() {
-	c.logger.Info("Init start program")
-	c.ledOvenWorking.On()
-	c.ovenRelayPower.On()
-}
-func (c *piController) EndProgram() {
-	c.logger.Info("End program")
-	c.ledOvenWorking.Off()
-	c.ovenRelayPower.Off()
-}
 func (d *piController) InitConfig(c config.Config) {
 
 	d.actualPercentual = 0
@@ -73,6 +49,7 @@ func WithLogger(logger commoninterface.Logger) func(*piController) {
 		pc.SetLogger(logger)
 	}
 }
+
 func calculateConducibility(lengths, conducibilities []float64) float64 {
 	total := 0.0
 	for _, l := range lengths {

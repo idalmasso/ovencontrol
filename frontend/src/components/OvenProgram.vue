@@ -1,20 +1,26 @@
 <template>
   <v-container>
     <v-row
-      ><v-col md="4" cols=3><v-btn color="blue" @click="$router.push({ name: 'Home' })"
-        >Indietro</v-btn
-      ></v-col ><v-col  md="4"
-        class="ms-auto" cols=3><v-btn v-if="!isWorking" color="blue" @click="StartProgram"
-        >Start</v-btn
-      ><v-btn v-else color="blue" @click="StopProgram"
-        >Stop</v-btn
-      ></v-col></v-row
+      ><v-col md="4" cols="3"
+        ><v-btn color="blue" @click="$router.push({ name: 'Home' })"
+          >Indietro</v-btn
+        ></v-col
+      ><v-col md="4" class="ms-auto" cols="3"
+        ><v-btn v-if="!isWorking" color="blue" @click="StartProgram"
+          >Start</v-btn
+        ><v-btn v-else color="blue" @click="StopProgram">Stop</v-btn></v-col
+      ></v-row
     >
-    <v-row justify="center" style="height: 200px ">
-      <Scatter :data="chartData" :options="chartOptions" ref="chart" width="500px" />
+    <v-row justify="center" style="height: 200px">
+      <Scatter
+        :data="chartData"
+        :options="chartOptions"
+        ref="chart"
+        width="500px"
+      />
     </v-row>
     <v-row text-center align-content="center" justify="center">
-      <v-card class="mx-auto" width="300"   >
+      <v-card class="mx-auto" width="300">
         <v-card-title class="subheading pt-2">Temperatura forno</v-card-title>
         <v-card-text class="py-0">
           <v-row align="center" no-gutters>
@@ -23,8 +29,10 @@
           </v-row>
         </v-card-text>
       </v-card>
-      <v-card class="mx-auto" width="300" >
-        <v-card-title class="subheading pt-2">Temperatura programma</v-card-title>
+      <v-card class="mx-auto" width="300">
+        <v-card-title class="subheading pt-2"
+          >Temperatura programma</v-card-title
+        >
         <v-card-text class="py-0">
           <v-row align="center" no-gutters>
             <span class="text-h7 font-weight-bold">{{ tempExpected }}</span>
@@ -33,15 +41,13 @@
         </v-card-text>
       </v-card>
     </v-row>
-    <v-row
-      ></v-row
-    >
-    
+    <v-row></v-row>
   </v-container>
 </template>
 
 <script setup>
 import { ref, onBeforeUnmount, defineProps, onMounted } from "vue";
+import useAppStore from "@/store/app.js";
 import { Scatter } from "vue-chartjs";
 import {
   Chart as ChartJS,
@@ -51,7 +57,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-
+const store = useAppStore();
 ChartJS.register(LinearScale, PointElement, LineElement, Tooltip, Legend);
 
 const props = defineProps({ programName: String });
@@ -144,7 +150,7 @@ const timerWorking = setInterval(IsWorkingEnabler, 1000);
 console.log(props);
 const programName = props["programName"];
 let url = "http://localhost:3333/api/processes/test-ramp";
-if (programName != "" && programName!=undefined && programName!=null) {
+if (programName != "" && programName != undefined && programName != null) {
   url = "http://localhost:3333/api/processes/start-process/" + programName;
 }
 function StartProgram() {
@@ -157,19 +163,22 @@ function StartProgram() {
         temperatureExpected = [];
         getTemp();
         timer = setInterval(getTemp, 10000);
+      } else {
+        a.json().then((data) => store.setAPIError(data["Error"]));
       }
     });
   }
 }
 
-function StopProgram(){
-  if(isWorking.value){
+function StopProgram() {
+  if (isWorking.value) {
     fetch("http://localhost:3333/api/processes/stop-process", {
       method: "POST",
     }).then((a) => {
       if (!a.ok) {
-        a.json().then(data=>console.log(data))
-        
+        a.json().then((data) => console.log(data));
+      } else {
+        a.json().then((data) => store.setAPIError(data["Error"]));
       }
     });
   }

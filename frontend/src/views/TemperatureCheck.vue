@@ -4,14 +4,24 @@
       ><v-btn color="blue" @click="$router.push({ name: 'ListTests' })"
         >Indietro</v-btn
       >
-      <v-text-field  v-if="!isWorking"  label="Power % (0-1)" 
-            v-model="power"
-            type="number">
-        </v-text-field>
-      <v-btn color="red"  v-if="!isWorking" @click="powerOvenOneMinute">Power one min</v-btn></v-row
+      <v-text-field
+        v-if="!isWorking"
+        label="Power % (0-1)"
+        v-model="power"
+        type="number"
+      >
+      </v-text-field>
+      <v-btn color="red" v-if="!isWorking" @click="powerOvenOneMinute"
+        >Power one min</v-btn
+      ></v-row
     >
-    <v-row justify="center" style="height: 200px ">
-      <Scatter :data="chartData" :options="chartOptions" ref="chart" width="500px" />
+    <v-row justify="center" style="height: 200px">
+      <Scatter
+        :data="chartData"
+        :options="chartOptions"
+        ref="chart"
+        width="500px"
+      />
     </v-row>
     <v-row text-center align-content="center" justify="center">
       <v-card class="mx-auto" width="400" title="Temperatura forno">
@@ -23,7 +33,6 @@
         </v-card-text>
       </v-card>
     </v-row>
-   
   </v-container>
 </template>
 
@@ -31,6 +40,8 @@
 import { ref, computed, reactive } from "vue";
 import { onBeforeUnmount } from "vue";
 import { Scatter } from "vue-chartjs";
+import { useAppStore } from "@/store/app";
+
 import {
   Chart as ChartJS,
   LinearScale,
@@ -45,7 +56,8 @@ const isWorking = ref(false);
 var temperatureData = [];
 var i = 0;
 const chart = ref(null);
-const power = ref(0.0)
+const power = ref(0.0);
+const store = useAppStore();
 const getTemp = () => {
   fetch("http://localhost:3333/api/processes/get-temperature").then((a) => {
     if (a.ok) {
@@ -63,6 +75,8 @@ const getTemp = () => {
           temperatureData.shift();
         }
       });
+    } else {
+      store.setAPIError("cannot get temperature");
     }
   });
 };
@@ -77,17 +91,20 @@ function IsWorkingEnabler() {
       }
     }
   );
-};
-const timerWorking = setInterval(IsWorkingEnabler, 1000);
-const powerOvenOneMinute = ()=>{
-  fetch("http://localhost:3333/api/processes/set-power-one-minute",{method:"POST", body:JSON.stringify({'power':power.value})}).then((a) => {
-    if (!a.ok) {
-      a.json().then(data=>{
-        alert(data.error)
-      })
-    }
-  })
 }
+const timerWorking = setInterval(IsWorkingEnabler, 1000);
+const powerOvenOneMinute = () => {
+  fetch("http://localhost:3333/api/processes/set-power-one-minute", {
+    method: "POST",
+    body: JSON.stringify({ power: power.value }),
+  }).then((a) => {
+    if (!a.ok) {
+      a.json().then((data) => {
+        store.setAPIError(data["Error"]);
+      });
+    }
+  });
+};
 const timer = setInterval(getTemp, 1000);
 const chartOptions = reactive({
   responsive: true,
@@ -115,6 +132,9 @@ const chartData = computed(() => {
     ],
   };
 });
-onBeforeUnmount(() => {clearInterval(timer);clearInterval(timerWorking)});
+onBeforeUnmount(() => {
+  clearInterval(timer);
+  clearInterval(timerWorking);
+});
 //
 </script>

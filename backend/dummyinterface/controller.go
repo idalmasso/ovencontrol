@@ -71,8 +71,9 @@ func (d *DummyController) GetPercentual() float64 {
 func (d *DummyController) GetMaxPower() float64 {
 	return d.maxPower
 }
-func (d *DummyController) SetPercentual(percent float64) {
+func (d *DummyController) SetPercentual(percent float64) error {
 	d.actualPercentual = percent
+	return nil
 }
 func (d *DummyController) SetLogger(logger commoninterface.Logger) {
 	d.logger = logger
@@ -82,11 +83,13 @@ func WithLogger(logger commoninterface.Logger) func(*DummyController) {
 		d.SetLogger(logger)
 	}
 }
-func (d *DummyController) InitStartProgram() {
+func (d *DummyController) InitStartProgram() error {
 	d.ovenTemperature = 0
+	return nil
 }
-func (d *DummyController) EndProgram() {
+func (d *DummyController) EndProgram() error {
 	d.isWorking = false
+	return nil
 }
 
 func NewDummyController(options ...func(*DummyController)) *DummyController {

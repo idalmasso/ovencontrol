@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/go-chi/httplog/v2"
-	"github.com/idalmasso/ovencontrol/backend/hwinterface"
+	"github.com/idalmasso/ovencontrol/backend/dummyinterface"
 	"github.com/idalmasso/ovencontrol/backend/server"
 )
 
@@ -33,8 +33,8 @@ func main() {
 		QuietDownPeriod: 10 * time.Second,
 		// SourceFieldName: "source",
 	})
-	controller := hwinterface.NewController(hwinterface.WithLogger(logger))
-	//controller := dummyinterface.NewDummyController(dummyinterface.WithLogger(logger))
+	//controller := hwinterface.NewController(hwinterface.WithLogger(logger))
+	controller := dummyinterface.NewDummyController(dummyinterface.WithLogger(logger))
 
 	server := server.NewMachineServer()
 	server.Init(controller, logger)

@@ -66,7 +66,7 @@ func (s *MachineServer) Init(machine controllerMachine, logger *httplog.Logger) 
 	s.machine = machine
 
 	s.updateMachineFromConfig()
-	s.ovenProgramWorker = ovenprograms.NewOvenProgramWorker(s.machine, *s.configuration, s.ovenProgramManager)
+	s.ovenProgramWorker = ovenprograms.NewOvenProgramWorker(s.machine, *s.configuration, s.ovenProgramManager, s.logger)
 	s.Router = chi.NewRouter()
 	s.Router.Use(cors.Handler(cors.Options{
 		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
