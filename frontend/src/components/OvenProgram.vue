@@ -47,7 +47,7 @@
 
 <script setup>
 import { ref, onBeforeUnmount, defineProps, onMounted } from "vue";
-import useAppStore from "@/store/app.js";
+import { useAppStore } from "@/store/app";
 import { Scatter } from "vue-chartjs";
 import {
   Chart as ChartJS,
