@@ -110,12 +110,8 @@ const chartOptions = reactive({
   responsive: true,
   maintainAspectRatio: false,
   scales: {
-    x: [
-      {
-        type: "linear",
-      },
-    ],
-    y: [{ type: "linear" }],
+    x: { type: "linear" },
+    y: { type: "linear", min: 0, max: 1400 },
   },
 });
 
