@@ -59,7 +59,7 @@ const routes = [
         // which is lazy-loaded when the route is visited.
         component: () => import("@/views/OvenRun.vue"),
         meta: { title: "Cottura" },
-        props: true
+        props: true,
       },
     ],
   },
@@ -120,7 +120,7 @@ const routes = [
         // which is lazy-loaded when the route is visited.
         component: () => import("@/views/EditProgramView.vue"),
         meta: { title: "MODIFICA PROGRAMMA" },
-        props: true
+        props: true,
       },
     ],
   },
@@ -135,7 +135,7 @@ const routes = [
         // this generates a separate chunk (Home-[hash].js) for this route
         // which is lazy-loaded when the route is visited.
         component: () => import("@/views/EditProgramView.vue"),
-        meta: { title: "NUOVO PROGRAMMA" }
+        meta: { title: "NUOVO PROGRAMMA" },
       },
     ],
   },
@@ -196,6 +196,21 @@ const routes = [
         // which is lazy-loaded when the route is visited.
         component: () => import("@/views/TestRampView.vue"),
         meta: { title: "TEST RAMPA DI SALITA" },
+      },
+    ],
+  },
+  {
+    path: "/tests/test-air",
+    component: () => import("@/layouts/default/DefaultLayout.vue"),
+    children: [
+      {
+        path: "",
+        name: "TestAir",
+        // route level code-splitting
+        // this generates a separate chunk (Home-[hash].js) for this route
+        // which is lazy-loaded when the route is visited.
+        component: () => import("@/views/TestAirView.vue"),
+        meta: { title: "TEST ARIA" },
       },
     ],
   },

@@ -91,7 +91,12 @@ func (d *DummyController) EndProgram() error {
 	d.isWorking = false
 	return nil
 }
-
+func (d *DummyController) OpenAir() error {
+	return nil
+}
+func (d *DummyController) CloseAir() error {
+	return nil
+}
 func NewDummyController(options ...func(*DummyController)) *DummyController {
 	d := &DummyController{}
 	for _, o := range options {

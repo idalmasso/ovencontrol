@@ -21,6 +21,11 @@ const listItems = ref([
     icon: "mdi-finance",
     name: "TestRamp",
   },
+  {
+    title: "Test aria",
+    icon: "mdi-air-filter",
+    name: "TestAir",
+  },
 ]);
 function buttonClickedHandler(name) {
   router.push({ name: name });

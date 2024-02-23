@@ -10,10 +10,10 @@ import (
 )
 
 type piController struct {
-	ledOvenWorking     *gpio.LedDriver
-	ssrPowerController *drivers.SSRRegulatorDriver
-	analogInput        *spi.MAX31856Driver
-	ovenRelayPower     *gpio.RelayDriver
+	ledOvenWorking                                        *gpio.LedDriver
+	ssrPowerController                                    *drivers.SSRRegulatorDriver
+	analogInput                                           *spi.MAX31856Driver
+	ovenRelayPower, airCompressorPower, airCompressorOpen *gpio.RelayDriver
 	gpio.RelayDriver
 	buttonPressFunc     func()
 	actualPercentual    float64
@@ -72,12 +72,19 @@ func NewController(options ...func(*piController)) *piController {
 	ledOk := gpio.NewLedDriver(r, "16")
 	ledOk.Start()
 	ledOk.On()
-	ovenRelayPower := gpio.NewRelayDriver(r, "36")
+	ovenRelayPower := gpio.NewRelayDriver(r, "37", gpio.WithRelayInverted())
+	airCompressorPower := gpio.NewRelayDriver(r, "35", gpio.WithRelayInverted())
+	airCompressorOpen := gpio.NewRelayDriver(r, "33", gpio.WithRelayInverted())
 	ledOvenWorking := gpio.NewLedDriver(r, "18")
-	ssrRegulator := drivers.NewSSRRegulator(r, "37")
+	ssrRegulator := drivers.NewSSRRegulator(r, "38")
 	analogInput := spi.NewMAX31856Driver(r, spi.WithAverageSample(4), spi.WithNoiseRejection(50), spi.WithThermocoupleType(spi.S))
 
-	pi := &piController{analogInput: analogInput, ssrPowerController: ssrRegulator, ledOvenWorking: ledOvenWorking, ovenRelayPower: ovenRelayPower}
+	pi := &piController{analogInput: analogInput,
+		ssrPowerController: ssrRegulator,
+		ledOvenWorking:     ledOvenWorking,
+		ovenRelayPower:     ovenRelayPower,
+		airCompressorPower: airCompressorPower,
+		airCompressorOpen:  airCompressorOpen}
 	for _, o := range options {
 		o(pi)
 	}
@@ -85,8 +92,12 @@ func NewController(options ...func(*piController)) *piController {
 	ledOvenWorking.Start()
 	ssrRegulator.Start()
 	ovenRelayPower.Start()
+	airCompressorPower.Start()
+	airCompressorOpen.Start()
 	ovenRelayPower.Off()
 	ledOvenWorking.Off()
+	airCompressorPower.Off()
+	airCompressorOpen.On()
 	pi.ssrPowerController.SetPower(0)
 	return pi
 }

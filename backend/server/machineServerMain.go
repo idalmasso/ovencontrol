@@ -95,6 +95,12 @@ func (s *MachineServer) Init(machine controllerMachine, logger *httplog.Logger) 
 			processRouter.Route("/set-power-one-minute", func(r chi.Router) {
 				r.Post("/", s.setPowerOneMinute)
 			})
+			processRouter.Route("/open-air", func(r chi.Router) {
+				r.Post("/", s.openAir)
+			})
+			processRouter.Route("/close-air", func(r chi.Router) {
+				r.Post("/", s.closeAir)
+			})
 			processRouter.Route("/get-temperature", func(r chi.Router) {
 				r.Get("/", s.getTemperature)
 			})

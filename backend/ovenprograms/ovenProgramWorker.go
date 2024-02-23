@@ -20,6 +20,8 @@ type Oven interface {
 	SetPercentual(float64) error
 	InitStartProgram() error
 	EndProgram() error
+	OpenAir() error
+	CloseAir() error
 }
 
 type OvenProgramWorker struct {
@@ -38,6 +40,7 @@ type OvenProgramWorker struct {
 	endRequest                         bool
 	programHistory                     ProgramDataPointArray
 	lastPointsToBeWritten              int
+	closedAir                          bool
 	logger                             commoninterface.Logger
 }
 
@@ -69,6 +72,7 @@ func (d OvenProgramWorker) shouldStopProgram() bool {
 	return d.endRequest
 }
 func (d *OvenProgramWorker) startedProgram() error {
+
 	f, err := os.OpenFile(filepath.Join(d.SavedRunFolder, "work.txt"), os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
@@ -123,7 +127,11 @@ func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram, runName string
 	d.lastPointsToBeWritten = 0
 	d.startedProgram()
 	go func(program OvenProgram) {
-
+		if program.AirCloseAtDegrees <= 0 {
+			d.oven.CloseAir()
+		} else {
+			d.oven.OpenAir()
+		}
 		d.timeSeconds = 0
 		if len(program.Points) == 0 {
 			return
@@ -145,11 +153,11 @@ func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram, runName string
 			return
 		}
 		if firstPoint.Temperature > temperature {
-			d.doRamp(firstPoint, true)
+			d.doRamp(firstPoint, true, program.AirCloseAtDegrees)
 		} else if firstPoint.Temperature == temperature {
 			d.maintainTemperature(firstPoint)
 		} else {
-			d.doRamp(firstPoint, false)
+			d.doRamp(firstPoint, false, program.AirCloseAtDegrees)
 		}
 		if d.shouldStopProgram() {
 			return
@@ -158,11 +166,11 @@ func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram, runName string
 		for _, s := range program.Points[1:] {
 			d.changedStepPoint(s)
 			if s.Temperature > lastTemp {
-				d.doRamp(s, true)
+				d.doRamp(s, true, program.AirCloseAtDegrees)
 			} else if s.Temperature == lastTemp {
 				d.maintainTemperature(s)
 			} else {
-				d.doRamp(s, false)
+				d.doRamp(s, false, program.AirCloseAtDegrees)
 			}
 			lastTemp = s.Temperature
 			if d.shouldStopProgram() {
@@ -174,7 +182,7 @@ func (d *OvenProgramWorker) StartOvenProgram(program OvenProgram, runName string
 	}(program)
 }
 
-func (d *OvenProgramWorker) doRamp(s StepPoint, isUpRamp bool) error {
+func (d *OvenProgramWorker) doRamp(s StepPoint, isUpRamp bool, airCloseAtDegrees float64) error {
 	var err error
 
 	d.TargetTemperature, err = d.oven.GetTemperature()
@@ -198,6 +206,10 @@ func (d *OvenProgramWorker) doRamp(s StepPoint, isUpRamp bool) error {
 		}
 		if ((ovenTemperature >= s.Temperature) && isUpRamp) || ((ovenTemperature <= s.Temperature) && !isUpRamp) {
 			break
+		}
+		if !d.closedAir && isUpRamp && ovenTemperature >= airCloseAtDegrees {
+			d.oven.CloseAir()
+			d.closedAir = true
 		}
 		step = (now.Sub(lastNow)).Seconds()
 		lastNow = now
@@ -228,7 +240,7 @@ func (d *OvenProgramWorker) doRamp(s StepPoint, isUpRamp bool) error {
 		actualPercentual = max(actualPercentual, 0)
 		d.oven.SetPercentual(actualPercentual)
 		previousError = errorValue
-		d.programHistory = append(d.programHistory, createDataPoint(d.programName, s.SegmentName, d.timeSeconds, d.TargetTemperature, newTemperature, actualPercentual))
+		d.programHistory = append(d.programHistory, createDataPoint(d.programName, s.SegmentName, d.timeSeconds, d.TargetTemperature, newTemperature, actualPercentual, d.closedAir))
 		d.lastPointsToBeWritten++
 		if timeSave > d.stepSave {
 			d.Save()
@@ -291,7 +303,7 @@ func (d *OvenProgramWorker) maintainTemperature(s StepPoint) error {
 		actualPercentual = max(actualPercentual, 0)
 		d.oven.SetPercentual(actualPercentual)
 		previousError = errorValue
-		d.programHistory = append(d.programHistory, createDataPoint(d.programName, s.SegmentName, d.timeSeconds, d.TargetTemperature, ovenTemperature, actualPercentual))
+		d.programHistory = append(d.programHistory, createDataPoint(d.programName, s.SegmentName, d.timeSeconds, d.TargetTemperature, ovenTemperature, actualPercentual, d.closedAir))
 		d.lastPointsToBeWritten++
 		if timeSave > d.stepSave {
 			d.Save()

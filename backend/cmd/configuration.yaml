@@ -15,7 +15,7 @@ oven:
   - 0.3
   - 0.14
   thermalCapacity: 900
-  weight: 24
+  weight: 240
   maxPower: 10000
 controller:
   kpRamp: 0.1
