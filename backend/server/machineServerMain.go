@@ -21,6 +21,7 @@ type controllerMachine interface {
 	temperatureReader
 	ovenprograms.Oven
 	InitConfig(c config.Config)
+	Terminate()
 }
 
 // PiServer
@@ -40,8 +41,9 @@ func (s *MachineServer) ListenAndServe() {
 	if !s.initialized {
 		panic("Server not initialized")
 	}
-
+	defer s.machine.Terminate()
 	if err := http.ListenAndServe(":"+strconv.Itoa(s.configuration.Server.Port), s.Router); err != nil {
+
 		panic("Cannot listen on server: " + err.Error())
 	}
 }

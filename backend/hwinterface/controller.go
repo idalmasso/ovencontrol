@@ -10,9 +10,9 @@ import (
 )
 
 type piController struct {
-	ledOvenWorking                                        *gpio.LedDriver
+	ledOvenWorking, ledOk                                 *gpio.LedDriver
 	ssrPowerController                                    *drivers.SSRRegulatorDriver
-	analogInput                                           *spi.MAX31856Driver
+	temperatureReader                                     *spi.MAX31856Driver
 	ovenRelayPower, airCompressorPower, airCompressorOpen *gpio.RelayDriver
 	gpio.RelayDriver
 	buttonPressFunc     func()
@@ -41,7 +41,7 @@ func (d *piController) InitConfig(c config.Config) {
 
 func (d *piController) SetLogger(logger commoninterface.Logger) {
 	d.logger = logger
-	d.analogInput.SetLogger(logger)
+	d.temperatureReader.SetLogger(logger)
 }
 
 func WithLogger(logger commoninterface.Logger) func(*piController) {
@@ -75,20 +75,21 @@ func NewController(options ...func(*piController)) *piController {
 	ovenRelayPower := gpio.NewRelayDriver(r, "37", gpio.WithRelayInverted())
 	airCompressorPower := gpio.NewRelayDriver(r, "35", gpio.WithRelayInverted())
 	airCompressorOpen := gpio.NewRelayDriver(r, "33", gpio.WithRelayInverted())
-	ledOvenWorking := gpio.NewLedDriver(r, "18")
+	ledOvenWorking := gpio.NewLedDriver(r, "22")
 	ssrRegulator := drivers.NewSSRRegulator(r, "38")
-	analogInput := spi.NewMAX31856Driver(r, spi.WithAverageSample(4), spi.WithNoiseRejection(50), spi.WithThermocoupleType(spi.S))
+	temperatureReader := spi.NewMAX31856Driver(r, spi.WithAverageSample(4), spi.WithNoiseRejection(50), spi.WithThermocoupleType(spi.S))
 
-	pi := &piController{analogInput: analogInput,
+	pi := &piController{temperatureReader: temperatureReader,
 		ssrPowerController: ssrRegulator,
 		ledOvenWorking:     ledOvenWorking,
 		ovenRelayPower:     ovenRelayPower,
 		airCompressorPower: airCompressorPower,
-		airCompressorOpen:  airCompressorOpen}
+		airCompressorOpen:  airCompressorOpen,
+		ledOk:              ledOk}
 	for _, o := range options {
 		o(pi)
 	}
-	analogInput.Start()
+	temperatureReader.Start()
 	ledOvenWorking.Start()
 	ssrRegulator.Start()
 	ovenRelayPower.Start()
@@ -100,4 +101,20 @@ func NewController(options ...func(*piController)) *piController {
 	airCompressorOpen.On()
 	pi.ssrPowerController.SetPower(0)
 	return pi
+}
+
+func (d *piController) Terminate() {
+	d.ledOk.Off()
+	d.ledOk.Halt()
+	d.temperatureReader.Halt()
+	d.ssrPowerController.SetPower(0)
+	d.ssrPowerController.Halt()
+	d.ovenRelayPower.Off()
+	d.ovenRelayPower.Halt()
+	d.airCompressorPower.Off()
+	d.airCompressorPower.Halt()
+	d.airCompressorOpen.Off()
+	d.airCompressorOpen.Halt()
+	d.ledOvenWorking.Off()
+	d.ledOvenWorking.Halt()
 }
