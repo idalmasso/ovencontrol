@@ -77,7 +77,7 @@ func NewController(options ...func(*piController)) *piController {
 	airCompressorOpen := gpio.NewRelayDriver(r, "33", gpio.WithRelayInverted())
 	ledOvenWorking := gpio.NewLedDriver(r, "22")
 	ssrRegulator := drivers.NewSSRRegulator(r, "38")
-	temperatureReader := spi.NewMAX31856Driver(r, spi.WithAverageSample(4), spi.WithNoiseRejection(50), spi.WithThermocoupleType(spi.S))
+	temperatureReader := spi.NewMAX31856Driver(r, spi.WithAverageSample(4), spi.WithNoiseRejection(50), spi.WithThermocoupleType(spi.N))
 
 	pi := &piController{temperatureReader: temperatureReader,
 		ssrPowerController: ssrRegulator,
