@@ -322,6 +322,10 @@ func (d *OvenProgramWorker) SetPowerOneMinute(pwr float64) error {
 	}
 	d.isWorking = true
 	d.mu.Unlock()
+	err := d.oven.SetPercentual(0)
+	if err != nil {
+		return err
+	}
 	go func(pwr float64) {
 		d.oven.InitStartProgram()
 		defer func() {
