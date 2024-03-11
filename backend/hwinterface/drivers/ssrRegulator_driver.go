@@ -7,10 +7,8 @@ import (
 
 // SSRRegulatorDriver represents a ssr regulator
 type SSRRegulatorDriver struct {
-	pin        string
-	name       string
-	connection gpio.DigitalWriter
-	high       bool
+	*driver
+	high bool
 	gobot.Commander
 }
 
@@ -18,15 +16,13 @@ type SSRRegulatorDriver struct {
 // It is actually the same as a led used in PWM mode, nothing more, then the circuit should implement a conversion of voltage required (in my case, a RCRC with opAmp does the trick)
 // Adds the following API Commands:
 //
-//	"Brightness" - See SSRRegulator.Brightness
+//	"Power" - See SSRRegulator.Power
 //	"Off" - See SSRRegulator.Off
-func NewSSRRegulator(a gpio.DigitalWriter, pin string) *SSRRegulatorDriver {
+func NewSSRRegulator(a gpio.DigitalWriter, pin string, opts ...interface{}) *SSRRegulatorDriver {
 	l := &SSRRegulatorDriver{
-		name:       gobot.DefaultName("SSRRegulator"),
-		pin:        pin,
-		connection: a,
-		high:       false,
-		Commander:  gobot.NewCommander(),
+		driver:    newDriver(a.(gobot.Connection), "SSRRegulator", append(opts, withPin(pin))...),
+		high:      false,
+		Commander: gobot.NewCommander(),
 	}
 
 	l.AddCommand("Power", func(params map[string]interface{}) interface{} {
@@ -41,39 +37,38 @@ func NewSSRRegulator(a gpio.DigitalWriter, pin string) *SSRRegulatorDriver {
 	return l
 }
 
-// Start implements the Driver interface
-func (l *SSRRegulatorDriver) Start() (err error) { return }
-
-// Halt implements the Driver interface
-func (l *SSRRegulatorDriver) Halt() (err error) { return }
-
-// Name returns the SSRRegulators name
-func (l *SSRRegulatorDriver) Name() string { return l.name }
-
-// SetName sets the SSRRegulators name
-func (l *SSRRegulatorDriver) SetName(n string) { l.name = n }
-
-// Pin returns the SSRRegulators pin
-func (l *SSRRegulatorDriver) Pin() string { return l.pin }
-
-// Connection returns the SSRRegulators Connection
-func (l *SSRRegulatorDriver) Connection() gobot.Connection {
-	return l.connection.(gobot.Connection)
+// State return true if the led is On and false if the led is Off
+func (d *SSRRegulatorDriver) State() bool {
+	return d.high
 }
 
-// Off sets the regulator to 0.
-func (l *SSRRegulatorDriver) Off() (err error) {
-	if err = l.connection.DigitalWrite(l.Pin(), 0); err != nil {
-		return
+// On sets the led to a high state.
+func (d *SSRRegulatorDriver) On() error {
+	if err := d.digitalWrite(d.driverCfg.pin, 1); err != nil {
+		return err
 	}
-	l.high = false
-	return
+	d.high = true
+	return nil
 }
 
-// SetPower sets the ssrRegulator to the specified level of power-voltage
-func (l *SSRRegulatorDriver) SetPower(level byte) (err error) {
-	if writer, ok := l.connection.(gpio.PwmWriter); ok {
-		return writer.PwmWrite(l.Pin(), level)
+// Off sets the led to a low state.
+func (d *SSRRegulatorDriver) Off() error {
+	if err := d.digitalWrite(d.driverCfg.pin, 0); err != nil {
+		return err
 	}
-	return gpio.ErrPwmWriteUnsupported
+	d.high = false
+	return nil
+}
+
+// Toggle sets the led to the opposite of it's current state
+func (d *SSRRegulatorDriver) Toggle() error {
+	if d.State() {
+		return d.Off()
+	}
+	return d.On()
+}
+
+// Brightness sets the led to the specified level of power
+func (d *SSRRegulatorDriver) SetPower(level byte) error {
+	return d.pwmWrite(d.driverCfg.pin, level)
 }
