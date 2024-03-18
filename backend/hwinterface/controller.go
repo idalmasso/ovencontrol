@@ -6,6 +6,7 @@ import (
 	"github.com/idalmasso/ovencontrol/backend/hwinterface/drivers"
 	"github.com/idalmasso/ovencontrol/backend/hwinterface/drivers/spi"
 	"gobot.io/x/gobot/v2/drivers/gpio"
+	"gobot.io/x/gobot/v2/platforms/adaptors"
 	"gobot.io/x/gobot/v2/platforms/raspi"
 )
 
@@ -65,7 +66,7 @@ func calculateConducibility(lengths, conducibilities []float64) float64 {
 }
 
 func NewController(options ...func(*piController)) *piController {
-	r := raspi.NewAdaptor()
+	r := raspi.NewAdaptor(adaptors.WithPWMUsePiBlaster())
 	r.Connect()
 
 	//This is showing the server is on, I don't need to pass to the piController
@@ -77,6 +78,7 @@ func NewController(options ...func(*piController)) *piController {
 	airCompressorOpen := gpio.NewRelayDriver(r, "15", gpio.WithRelayInverted())
 	ledOvenWorking := gpio.NewLedDriver(r, "22")
 	ssrPowerController := drivers.NewSSRRegulator(r, "37")
+
 	temperatureReader := spi.NewMAX31856Driver(r, spi.WithAverageSample(4), spi.WithNoiseRejection(50), spi.WithThermocoupleType(spi.N))
 
 	pi := &piController{temperatureReader: temperatureReader,
@@ -104,6 +106,9 @@ func NewController(options ...func(*piController)) *piController {
 }
 
 func (d *piController) Terminate() {
+	if d.logger != nil {
+		d.logger.Info("Terminate called, shutting down all pins")
+	}
 	d.ledOk.Off()
 	d.ledOk.Halt()
 	d.temperatureReader.Halt()
