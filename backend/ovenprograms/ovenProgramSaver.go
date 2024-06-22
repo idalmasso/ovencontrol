@@ -31,7 +31,7 @@ func (s OvenProgramSaver) MoveAllRuns() error {
 		found := false
 		for _, d := range directories {
 			if d.IsDir() {
-				usbFilePath = usbFilePath + d.Name()
+				usbFilePath = filepath.Join(s.usbPath, d.Name())
 				found = true
 				break
 			}
