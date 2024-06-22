@@ -243,22 +243,28 @@ func (d *MAX31856Driver) GetTemperature() (float64, error) {
 	if err := d.performOneShotMeasurement(); err != nil {
 		return 0, err
 	}
-	return d.UnpackTemperature(), nil
+	return d.UnpackTemperature()
 }
 
 // Reads the probe temperature from the register
-func (d *MAX31856Driver) UnpackTemperature() float64 {
+func (d *MAX31856Driver) UnpackTemperature() (float64, error) {
 	rawTemp := make([]byte, 3)
+	if d.connection == nil {
+		return 0, fmt.Errorf("cannot get data from device")
+	}
 	d.connection.ReadBlockData(MAX31856_LTCBH_REG, rawTemp)
 
 	// effectively shift raw_read >> 12 to convert pseudo-float
 	tempInt := (uint32(rawTemp[0]) << 16) | (uint32(rawTemp[1]) << 8) | uint32(rawTemp[2])
-	return float64(tempInt) / 4096.0
+	return float64(tempInt) / 4096.0, nil
 }
 
 func (d *MAX31856Driver) writeUint8(address, val byte) error {
 	//NEEDED: Address with 8th bit to 1 are write
 	address |= 0x80
+	if d.connection == nil {
+		return fmt.Errorf("cannot get data from device")
+	}
 	if err := d.connection.WriteByteData(address, val); err != nil {
 		return err
 	}
@@ -267,6 +273,9 @@ func (d *MAX31856Driver) writeUint8(address, val byte) error {
 
 func (d *MAX31856Driver) readUint8(address byte) (uint8, error) {
 	address &= 0x7F
+	if d.connection == nil {
+		return 0, fmt.Errorf("cannot get data from device")
+	}
 	if val, err := d.connection.ReadByteData(address); err != nil {
 		return 0, err
 	} else {

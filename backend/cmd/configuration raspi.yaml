@@ -1,0 +1,31 @@
+server:
+  distributionDirectory: dist
+  port: 3333
+  ovenProgramFolder: ./programs
+  testRampTemperature: 100
+  testRampTimeMinutes: 10
+oven:
+  length: 0.11
+  height: 0.08
+  width: 0.23
+  insulationWidths:
+  - 0.075
+  - 0.05
+  thermalConductivities:
+  - 0.3
+  - 0.14
+  thermalCapacity: 900
+  weight: 240
+  maxPower: 10000
+controller:
+  kpRamp: 0.1
+  kiRamp: 0.05
+  kdRamp: 0.0012
+  kpMaintain: 0.01
+  kiMaintain: 0.0001
+  kdMaintain: 0.0001
+  stepTime: 1
+  saveTime: 60
+  savedRunFolder: ./runs
+  usbPath: /media/pi
+  usbSaveFolderName: ovenruns

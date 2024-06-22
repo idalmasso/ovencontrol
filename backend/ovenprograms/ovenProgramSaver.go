@@ -23,10 +23,26 @@ func (s OvenProgramSaver) MoveAllRuns() error {
 	if _, err := os.Stat(s.savedRunFolder); os.IsNotExist(err) {
 		return fmt.Errorf("cannot find saved run folder %w", err)
 	}
-	if _, err := os.Stat(filepath.Join(s.usbPath, s.usbSaveFolderName)); err != nil {
-
+	usbFilePath := s.usbPath
+	//look for the usb in the mount folder (normally in raspy it is automounted in /media/pi/xxxxx, so I just search for first folder in this folder)
+	if directories, err := os.ReadDir(s.usbPath); err != nil {
+		return fmt.Errorf("error while selecting subfolders: %w", err)
+	} else {
+		found := false
+		for _, d := range directories {
+			if d.IsDir() {
+				usbFilePath = usbFilePath + d.Name()
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("error: cannot find subfolder in " + s.usbPath + " directory, unexpected")
+		}
+	}
+	if _, err := os.Stat(filepath.Join(usbFilePath, s.usbSaveFolderName)); err != nil {
 		if os.IsNotExist(err) {
-			if err := os.Mkdir(filepath.Join(s.usbPath, s.usbSaveFolderName), os.ModePerm); err != nil {
+			if err := os.Mkdir(filepath.Join(usbFilePath, s.usbSaveFolderName), os.ModePerm); err != nil {
 				return err
 			}
 		}
@@ -37,7 +53,7 @@ func (s OvenProgramSaver) MoveAllRuns() error {
 		}
 		if !info.IsDir() {
 
-			err := moveFile(path, filepath.Join(s.usbPath, s.usbSaveFolderName, filepath.Base(path)))
+			err := moveFile(path, filepath.Join(usbFilePath, s.usbSaveFolderName, filepath.Base(path)))
 			if err != nil {
 				return err
 			}
