@@ -27,5 +27,5 @@ controller:
   stepTime: 1
   saveTime: 60
   savedRunFolder: ./runs
-  usbPath: /mnt/HD6
+  usbPath: /media/ivano
   usbSaveFolderName: ovenruns

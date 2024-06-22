@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"syscall"
 )
 
 type OvenProgramSaver struct {
@@ -60,7 +61,11 @@ func (s OvenProgramSaver) MoveAllRuns() error {
 		}
 		return nil
 	})
-
+	if err != nil {
+		syscall.Unmount(usbFilePath, syscall.MNT_DETACH)
+	} else {
+		return syscall.Unmount(usbFilePath, syscall.MNT_DETACH)
+	}
 	return err
 }
 
